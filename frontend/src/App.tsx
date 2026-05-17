@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { Layout } from './components/layout/Layout'
+import { ErrorBoundary } from './components/ErrorBoundary'
 import { HomePage } from './pages/Home'
 import { SearchPage } from './pages/Search'
 import { MangaDetailPage } from './pages/MangaDetail'
@@ -22,25 +23,27 @@ const queryClient = new QueryClient({
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <Routes>
-          <Route element={<Layout />}>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/search" element={<SearchPage />} />
-            <Route path="/library" element={<LibraryPage />} />
-            <Route path="/manga/:id" element={<MangaDetailPage />} />
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/signup" element={<SignupPage />} />
-            <Route path="/forum" element={<ForumPage />} />
-            <Route path="/forum/category/:categoryId" element={<ForumPage />} />
-            <Route path="/forum/thread/:threadId" element={<ForumPage />} />
-            <Route path="*" element={<NotFoundPage />} />
-          </Route>
-          <Route path="/reader/:chapterId" element={<ReaderPage />} />
-        </Routes>
-      </BrowserRouter>
-    </QueryClientProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <BrowserRouter>
+          <Routes>
+            <Route element={<Layout />}>
+              <Route path="/" element={<HomePage />} />
+              <Route path="/search" element={<SearchPage />} />
+              <Route path="/library" element={<LibraryPage />} />
+              <Route path="/manga/:id" element={<MangaDetailPage />} />
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/signup" element={<SignupPage />} />
+              <Route path="/forum" element={<ForumPage />} />
+              <Route path="/forum/category/:categoryId" element={<ForumPage />} />
+              <Route path="/forum/thread/:threadId" element={<ForumPage />} />
+              <Route path="*" element={<NotFoundPage />} />
+            </Route>
+            <Route path="/reader/:chapterId" element={<ReaderPage />} />
+          </Routes>
+        </BrowserRouter>
+      </QueryClientProvider>
+    </ErrorBoundary>
   )
 }
 

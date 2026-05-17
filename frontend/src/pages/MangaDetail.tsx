@@ -20,20 +20,25 @@ const readingStatuses = [
 
 export function MangaDetailPage() {
   const { id } = useParams<{ id: string }>()
-  const { data: mangaRes, isLoading } = useManga(id!)
+  
+  // ⚠️ ALL HOOKS MUST BE CALLED AT THE TOP IN THE SAME ORDER EVERY RENDER
+  const { data: mangaRes, isLoading, isError: isMangaError, error: mangaError } = useManga(id!)
+  const { data: feedData, isError: isFeedError } = useMangaFeed(id!, {
+    limit: 500,
+  })
+  
+  // Pre-fetch related manga - hooks must be called unconditionally (not after early returns)
+  const { data: relatedData } = useMangaSearch({
+    limit: 10,
+    hasAvailableChapters: true,
+    contentRating: ['safe', 'suggestive'],
+    order: { followedCount: 'desc' },
+  })
+
+  // STATE SETTERS - All hooks must come before early returns
   const [selectedLang, setSelectedLang] = useState<string | null>(null)
   const [chapterQuery, setChapterQuery] = useState('')
   const [showStatusDropdown, setShowStatusDropdown] = useState(false)
-
-  const { data: feedData } = useMangaFeed(id!, {
-    limit: 500,
-  })
-
-  const { follow, unfollow, getStatus } = useFollows()
-  const { addEntry, history } = useReadingHistory()
-  const { isLoggedIn, username: currentUsername } = useAuth()
-
-  // Stats & Rating state
   const [stats, setStats] = useState({
     views: 0,
     averageRating: 0,
@@ -41,11 +46,15 @@ export function MangaDetailPage() {
     userRating: 0
   })
   const [hoverRating, setHoverRating] = useState(0)
-
-  // Comments state
   const [comments, setComments] = useState<any[]>([])
   const [commentText, setCommentText] = useState('')
   const [commentSubmitting, setCommentSubmitting] = useState(false)
+
+  // STORE HOOKS
+  const { follow, unfollow, getStatus } = useFollows()
+  const { addEntry, history } = useReadingHistory()
+  const { isLoggedIn, username: currentUsername } = useAuth()
+  const { addToast } = useToast()
 
   // Load Stats, views & comments
   const loadStatsAndComments = async () => {
@@ -80,8 +89,6 @@ export function MangaDetailPage() {
 
     loadStatsAndComments()
   }, [id])
-
-  const { addToast } = useToast()
 
   const handleRate = async (rating: number) => {
     if (!isLoggedIn) {
@@ -165,6 +172,40 @@ export function MangaDetailPage() {
     )
   }
 
+  // Error state: Failed to load manga details
+  if (isMangaError) {
+    const errorMessage = mangaError instanceof Error ? mangaError.message : 'Failed to load manga details'
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[50vh] gap-6 text-center">
+        <div className="w-16 h-16 rounded-full bg-rose-500/10 flex items-center justify-center">
+          <i className="fa-solid fa-triangle-exclamation text-3xl text-rose-400" />
+        </div>
+        <div>
+          <h2 className="text-2xl font-black text-white mb-2">Oops! Something went wrong</h2>
+          <p className="text-muted mb-1">We couldn't load the manga details.</p>
+          <p className="text-muted text-sm mb-6">{errorMessage}</p>
+        </div>
+        <div className="flex gap-3">
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+            className="inline-flex items-center gap-2 bg-accent hover:bg-pink-500 text-dark font-bold px-6 py-3 rounded-xl text-sm transition-all"
+          >
+            <i className="fa-solid fa-rotate-left" />
+            Try Again
+          </button>
+          <Link
+            to="/"
+            className="inline-flex items-center gap-2 bg-card hover:bg-gray-800 text-muted font-bold px-6 py-3 rounded-xl text-sm transition-all border border-gray-700"
+          >
+            <i className="fa-solid fa-house" />
+            Go Home
+          </Link>
+        </div>
+      </div>
+    )
+  }
+
   const manga = mangaRes.data
   const title = manga.attributes.title.en ?? Object.values(manga.attributes.title)[0] ?? 'Untitled'
   const altTitles = manga.attributes.altTitles?.map((t) => Object.values(t)[0]).filter(Boolean).slice(0, 3) ?? []
@@ -178,16 +219,11 @@ export function MangaDetailPage() {
   const authorName = (authorRel?.attributes as any)?.name ?? null
   const artistName = (artistRel?.attributes as any)?.name ?? null
 
-  // Related manga by shared tags
+  // Filter related manga by tags from the loaded manga
   const topTagIds = tags.slice(0, 3).map((t: Tag) => t.id)
-  const { data: relatedData } = useMangaSearch({
-    includedTags: topTagIds.length > 0 ? topTagIds : undefined,
-    limit: 10,
-    hasAvailableChapters: true,
-    contentRating: ['safe', 'suggestive'],
-    order: { followedCount: 'desc' },
-  })
-  const relatedManga = (relatedData?.data ?? []).filter((m: Manga) => m.id !== id).slice(0, 6)
+  const relatedManga = (relatedData?.data ?? [])
+    .filter((m: Manga) => m.id !== id && (topTagIds.length === 0 || m.attributes.tags?.some(tag => topTagIds.includes(tag.id))))
+    .slice(0, 6)
   
   const allChapters = feedData?.data ?? []
   const availableLanguages = Array.from(
@@ -532,6 +568,16 @@ export function MangaDetailPage() {
             </div>
           </div>
         </div>
+
+        {isFeedError && (
+          <div className="mb-6 p-4 bg-amber-500/10 border border-amber-500/30 rounded-xl flex items-start gap-3">
+            <i className="fa-solid fa-circle-exclamation text-amber-400 text-lg flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="text-amber-400 font-semibold text-sm">Unable to load chapters</p>
+              <p className="text-amber-300/70 text-xs mt-0.5">Some chapters may be unavailable. Try refreshing the page.</p>
+            </div>
+          </div>
+        )}
 
         {sortedVolumes.map(([vol, volChapters]) => (
           <div key={vol} className="mb-4">
