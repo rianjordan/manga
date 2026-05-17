@@ -97,7 +97,28 @@ Reader's Haven is packed with high-performance features designed to deliver a mo
 
 ---
 
-### 🔐 7. User Authentication & Path Guards (`Login.tsx`, `Signup.tsx`)
+### 💬 7. Community Forums & Dynamic Discussion Boards (`Forum.tsx`)
+*   **Structured Category Hub (`/forum`)**:
+    *   *Implementation*: A full-featured forum lobby displaying discussion classifications: *Announcements, General Chat, Manga Recommendations, Help & Support*. 
+    *   *Dynamic Thread Querying*: Queries category-specific listings (`GET /forum/threads?categoryId=id`) to resolve thread names, authors, comment totals, and active timings.
+*   **Creation & Mod Controls**:
+    *   *Implementation*: Registered readers can instantly post new discussions (`POST /forum/threads`). Original creators can delete entire threads (`DELETE /forum/threads/:id`), triggering automatic redirections back to the category index.
+*   **Nested Discussion Posts**:
+    *   *Implementation*: Renders chronological post threads (`GET /forum/threads/:threadId/posts`). Generates automated robot profile icons using Dicebear seeds (`https://api.dicebear.com/7.x/bottts/svg?seed=username`) for a personalized, high-fidelity chat experience. Support inline deletion triggers (`DELETE /forum/posts/:id`) verified via active server tokens.
+
+---
+
+### 🗣️ 8. Interactive Chapter Comments Sidebar Drawer (`Reader.tsx`)
+*   **Sliding Overlay Sidebar Drawer**:
+    *   *Implementation*: An animated side-sliding comments sidebar panel that glides in over active reader pages, showcasing the discussion active counts.
+*   **Live Edge Comments Feed**:
+    *   *Implementation*: Integrates with the Cloudflare D1 SQL backend. Queries chapter-specific discussion records dynamically (`GET /comments?mangaId=id&chapterId=id`) and pushes new comments (`POST /comments`) using raw SQL edge inserts, completely eliminating roundtrip latency.
+*   **Inline User Moderation**:
+    *   *Implementation*: Authenticated users can instantly delete their own posts directly within the reader sidebar panel.
+
+---
+
+### 🔐 9. User Authentication & Path Guards (`Login.tsx`, `Signup.tsx`)
 *   **Sleek Dynamic Forms**:
     *   *Implementation*: Custom credentials forms with real-time feedback, input validations, and floating focus markers.
 *   **Zustand Persisted Sessions**:
@@ -107,7 +128,7 @@ Reader's Haven is packed with high-performance features designed to deliver a mo
 
 ---
 
-### 🌗 8. Master Dual-Theme System (`index.css` & Theme Context)
+### 🌗 10. Master Dual-Theme System (`index.css` & Theme Context)
 *   **Immersive Deep Dark & Slate Contrast Light Modes**:
     *   *Implementation*: A full CSS variable setup mapping dark backgrounds (`#121212`) and slate light modes (`#f8fafc`).
 *   **Global Variable Transitions**:
@@ -115,13 +136,15 @@ Reader's Haven is packed with high-performance features designed to deliver a mo
 
 ---
 
-### ⚡ 9. Cloudflare Worker Edge Proxies & Backend (BFF)
+### ⚡ 11. Cloudflare Worker Edge Proxies & Backend (BFF)
 *   **BFF Gateway Worker (`workers/api`)**:
     *   *Implementation*: A secure routing node built on Hono/Cloudflare Workers.
     *   *CORS Bypass & Edge Caching*: Appends cross-origin allowance headers, proxies core endpoints, and caches standard catalog listings locally at edge nodes.
-    *   *Edge SQL Layer*: Leverages Cloudflare D1 SQL engine, executing lightning-fast CRUD queries to manage user progress, credentials, and bookmark records in under 20ms.
+    *   *Edge SQL Layer*: Agent acts over Cloudflare D1 SQL engine executing quick schema CRUD requests to handle all custom user bookmarks, comments, forums, credentials, and read status progress in <20ms.
 *   **Image Routing Proxy (`workers/images`)**:
     *   *Implementation*: Intercepts cover and page requests, overrides referer parameters to mock normal browser queries, and caches cover assets on regional edge caches for **24 hours** using the Cache Storage API, bypassing hotlink blocklists and accelerating page loads.
+
+---
 
 ---
 
