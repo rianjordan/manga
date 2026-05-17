@@ -107,7 +107,7 @@ export function HomePage() {
     <div className="flex flex-col gap-10">
       {/* Hero Carousel */}
       {featured.length > 0 && (
-        <div className="relative group h-[750px] sm:h-[650px] md:h-[550px] w-full overflow-hidden rounded-2xl border border-gray-800/40 shadow-2xl bg-card">
+        <div className="relative group h-[750px] sm:h-[650px] md:h-[550px] w-full overflow-hidden rounded-2xl border border-gray-800/40 shadow-2xl hero-carousel-container">
           {featured.slice(0, 5).map((manga, idx) => (
             <div
               key={manga.id}
@@ -353,7 +353,7 @@ function HeroSlide({ manga }: { manga: Manga }) {
   const tags = manga.attributes.tags?.slice(0, 4) ?? []
 
   return (
-    <section className="relative bg-[#121212]/65 backdrop-blur-md overflow-hidden h-full">
+    <section className="relative hero-slide-bg overflow-hidden h-full">
       <div className="grid grid-cols-1 md:grid-cols-[380px_1fr] gap-6 md:gap-14 p-5 md:p-12 items-center h-full pb-16 md:pb-12">
         {coverFile && (
           <div className="relative h-full flex items-center justify-center max-h-[220px] md:max-h-[460px] flex-shrink-0">
