@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useMangaSearch } from '../hooks/useManga'
 import { MangaCard } from '../components/ui/MangaCard'
@@ -16,21 +16,39 @@ export function SearchPage() {
   const [page, setPage] = useState(1)
 
   const query = searchParams.get('q') ?? ''
+  const type = searchParams.get('type') ?? ''
   const limit = 20
 
-  const { data, isLoading } = useMangaSearch({
+  useEffect(() => {
+    // Reset page on search or type change
+    setPage(1)
+  }, [query, type])
+
+  const searchParamsObj: any = {
     title: query || undefined,
     limit,
     offset: (page - 1) * limit,
-    includedTags: selectedGenres.length > 0 ? undefined : undefined, // Would need actual tag IDs
     order: { relevance: 'desc' },
     hasAvailableChapters: true,
     contentRating: ['safe', 'suggestive'],
-  })
+  }
+
+  if (type === 'manhwa') {
+    searchParamsObj.originalLanguage = ['ko']
+  } else if (type === 'manga') {
+    searchParamsObj.originalLanguage = ['ja']
+  } else if (type === 'novel') {
+    searchParamsObj.includedTags = ['f9aa23da-a38b-4fb0-b359-8576dbb9d4d8']
+  }
+
+  const { data, isLoading } = useMangaSearch(searchParamsObj)
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
-    setSearchParams(searchInput ? { q: searchInput } : {})
+    const nextParams: Record<string, string> = {}
+    if (searchInput.trim()) nextParams.q = searchInput.trim()
+    if (type) nextParams.type = type
+    setSearchParams(nextParams)
     setPage(1)
   }
 
@@ -43,13 +61,23 @@ export function SearchPage() {
 
   const totalPages = data ? Math.ceil(data.total / limit) : 0
 
+  const getPageTitle = () => {
+    if (type === 'manhwa') return 'Explore Manhwa'
+    if (type === 'manga') return 'Explore Manga'
+    if (type === 'novel') return 'Explore Novels'
+    return 'Explore Catalog'
+  }
+
   return (
     <div className="flex flex-col gap-8">
       {/* Search Header */}
       <div>
-        <h1 className="text-3xl font-black text-white uppercase tracking-tight mb-6">
-          Search
-        </h1>
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-2 h-8 bg-accent rounded-full" />
+          <h1 className="text-3xl font-black text-white uppercase tracking-tight">
+            {getPageTitle()}
+          </h1>
+        </div>
 
         <form onSubmit={handleSearch} className="flex gap-3">
           <div className="flex-1 relative">
@@ -64,7 +92,7 @@ export function SearchPage() {
           </div>
           <button
             type="submit"
-            className="bg-accent hover:bg-pink-500 text-dark font-bold px-6 py-3 rounded-xl text-sm tracking-wide transition-all"
+            className="bg-accent hover:bg-pink-500 text-dark font-bold px-6 py-3 rounded-xl text-sm tracking-wide transition-all cursor-pointer"
           >
             SEARCH
           </button>
@@ -77,7 +105,7 @@ export function SearchPage() {
           <button
             key={genre}
             onClick={() => toggleGenre(genre)}
-            className={`px-4 py-2 rounded-full text-xs font-bold tracking-wider transition-all duration-300 ${
+            className={`px-4 py-2 rounded-full text-xs font-bold tracking-wider transition-all duration-300 cursor-pointer ${
               selectedGenres.includes(genre)
                 ? 'bg-accent text-dark shadow-lg shadow-accent/20'
                 : 'bg-card text-muted hover:text-accent border border-gray-700/50'
@@ -101,31 +129,48 @@ export function SearchPage() {
             </p>
           )}
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
-            {data?.data.map((manga: Manga, i: number) => (
-              <MangaCard key={manga.id} manga={manga} index={i} />
-            ))}
-          </div>
+          {data?.data.length === 0 ? (
+            <div className="text-center py-20 text-muted">
+              No manga found matching your filters.
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
+              {data?.data.map((manga: Manga, i: number) => (
+                <MangaCard key={manga.id} manga={manga} index={i} />
+              ))}
+            </div>
+          )}
 
           {totalPages > 1 && (
-            <div className="flex justify-center items-center gap-4 mt-8">
-              <button
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page === 1}
-                className="w-10 h-10 rounded-xl bg-card border border-gray-700/50 text-muted hover:text-accent disabled:opacity-30 transition-all flex items-center justify-center"
-              >
-                <i className="fa-solid fa-chevron-left text-sm" />
-              </button>
-              <span className="text-sm text-muted font-bold">
-                Page {page} of {totalPages}
-              </span>
-              <button
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                disabled={page === totalPages}
-                className="w-10 h-10 rounded-xl bg-card border border-gray-700/50 text-muted hover:text-accent disabled:opacity-30 transition-all flex items-center justify-center"
-              >
-                <i className="fa-solid fa-chevron-right text-sm" />
-              </button>
+            <div className="flex justify-end items-center mt-8 gap-4">
+              <div className="flex items-center gap-2 pr-4 border-r border-gray-800/60 mr-2">
+                <span className="text-muted text-xs font-bold uppercase tracking-widest">Page</span>
+                <span className="text-white font-black text-sm">
+                  {String(page).padStart(2, '0')}{' '}
+                  <span className="text-muted/40 mx-1">/</span>{' '}
+                  {String(Math.min(totalPages, 10)).padStart(2, '0')}
+                </span>
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page === 1}
+                  className="group w-12 h-12 rounded-2xl bg-card border border-gray-800/60 text-muted hover:text-accent hover:border-accent/50 transition-all duration-300 flex items-center justify-center shadow-xl hover:shadow-accent/5 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                  aria-label="Previous page"
+                >
+                  <i className="fa-solid fa-arrow-left text-sm transition-transform group-hover:-translate-x-1" />
+                </button>
+
+                <button
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={page === totalPages}
+                  className="group w-12 h-12 rounded-2xl bg-card border border-gray-800/60 text-muted hover:text-accent hover:border-accent/50 transition-all duration-300 flex items-center justify-center shadow-xl hover:shadow-accent/5 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                  aria-label="Next page"
+                >
+                  <i className="fa-solid fa-arrow-right text-sm transition-transform group-hover:translate-x-1" />
+                </button>
+              </div>
             </div>
           )}
         </>

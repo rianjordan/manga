@@ -249,7 +249,7 @@ export function Header() {
       )}
       <aside
         className={`fixed top-0 right-0 w-[300px] h-full bg-card shadow-[-10px_0_40px_rgba(0,0,0,0.6)] z-[60] flex flex-col transition-all duration-500 ease-out transform ${
-          isSidebarOpen ? 'translate-x-0' : 'translate-x-full'
+          isSidebarOpen ? 'translate-x-0' : 'translate-x-full pointer-events-none invisible'
         }`}
       >
         <div className="flex justify-between items-center p-6 border-b border-gray-800/50">

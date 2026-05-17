@@ -93,6 +93,7 @@ export interface SearchParams {
   order?: Record<string, string>
   hasAvailableChapters?: boolean
   translatedLanguage?: string[]
+  originalLanguage?: string[]
 }
 
 export type MangaStatus = 'reading' | 'completed' | 'plan_to_read' | 'dropped' | 'on_hold'

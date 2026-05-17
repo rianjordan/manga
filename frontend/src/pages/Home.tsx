@@ -99,19 +99,28 @@ export function HomePage() {
     )
   }
 
-  const hero = featured[currentSlide]
-
   return (
     <div className="flex flex-col gap-10">
       {/* Hero Carousel */}
-      {hero && (
-        <div className="relative group">
-          <HeroSlide manga={hero} />
+      {featured.length > 0 && (
+        <div className="relative group h-[750px] sm:h-[650px] md:h-[550px] w-full overflow-hidden rounded-2xl border border-gray-800/40 shadow-2xl">
+          {featured.slice(0, 5).map((manga, idx) => (
+            <div
+              key={manga.id}
+              className={`absolute inset-0 transition-all duration-[1000ms] ease-in-out ${
+                idx === currentSlide
+                  ? 'opacity-100 scale-100 z-10 pointer-events-auto'
+                  : 'opacity-0 scale-95 z-0 pointer-events-none'
+              }`}
+            >
+              <HeroSlide manga={manga} />
+            </div>
+          ))}
           
           {/* Navigation Arrows */}
           <button
             onClick={() => setCurrentSlide((prev) => (prev - 1 + Math.min(featured.length, 5)) % Math.min(featured.length, 5))}
-            className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-black/60 hover:bg-accent hover:text-dark text-white border border-gray-800/40 flex items-center justify-center transition-all duration-300 opacity-0 group-hover:opacity-100 shadow-xl cursor-pointer"
+            className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-black/60 hover:bg-accent hover:text-dark text-white border border-gray-800/40 flex items-center justify-center transition-all duration-300 opacity-0 group-hover:opacity-100 shadow-xl cursor-pointer z-20"
             aria-label="Previous slide"
           >
             <i className="fa-solid fa-chevron-left text-lg" />
@@ -119,14 +128,14 @@ export function HomePage() {
           
           <button
             onClick={() => setCurrentSlide((prev) => (prev + 1) % Math.min(featured.length, 5))}
-            className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-black/60 hover:bg-accent hover:text-dark text-white border border-gray-800/40 flex items-center justify-center transition-all duration-300 opacity-0 group-hover:opacity-100 shadow-xl cursor-pointer"
+            className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-black/60 hover:bg-accent hover:text-dark text-white border border-gray-800/40 flex items-center justify-center transition-all duration-300 opacity-0 group-hover:opacity-100 shadow-xl cursor-pointer z-20"
             aria-label="Next slide"
           >
             <i className="fa-solid fa-chevron-right text-lg" />
           </button>
           
           {/* Pagination Indicators */}
-          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2.5 z-10 bg-black/40 backdrop-blur-md px-4 py-2 rounded-full border border-white/5">
+          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2.5 z-20 bg-black/40 backdrop-blur-md px-4 py-2 rounded-full border border-white/5">
             {Array.from({ length: Math.min(featured.length, 5) }).map((_, idx) => (
               <button
                 key={idx}
@@ -277,14 +286,14 @@ function HeroSlide({ manga }: { manga: Manga }) {
   const tags = manga.attributes.tags?.slice(0, 4) ?? []
 
   return (
-    <section className="relative bg-[#1a1a1a]/95 backdrop-blur-sm rounded-2xl shadow-2xl overflow-hidden border border-gray-800/40">
-      <div className="grid grid-cols-1 md:grid-cols-[400px_1fr] gap-6 md:gap-16 p-6 md:p-12 items-center min-h-[500px]">
+    <section className="relative bg-[#1a1a1a]/95 backdrop-blur-sm overflow-hidden h-full">
+      <div className="grid grid-cols-1 md:grid-cols-[400px_1fr] gap-6 md:gap-16 p-6 md:p-12 items-center h-full">
         {coverFile && (
-          <div className="relative">
+          <div className="relative h-full flex items-center justify-center max-h-[300px] md:max-h-full">
             <img
               src={coverUrl(manga.id, coverFile)}
               alt={title}
-              className="w-full aspect-portrait object-cover rounded-xl shadow-[0_20px_60px_rgba(0,0,0,0.6)]"
+              className="max-h-full aspect-portrait object-cover rounded-xl shadow-[0_20px_60px_rgba(0,0,0,0.6)]"
             />
           </div>
         )}
@@ -301,12 +310,12 @@ function HeroSlide({ manga }: { manga: Manga }) {
               </span>
             </div>
 
-            <h1 className="text-4xl sm:text-5xl xl:text-6xl font-black uppercase tracking-tight leading-[0.95] text-white drop-shadow-2xl">
+            <h1 className="text-4xl sm:text-5xl xl:text-6xl font-black uppercase tracking-tight leading-[0.95] text-white drop-shadow-2xl line-clamp-2">
               {title}
             </h1>
 
             {desc && (
-              <p className="text-muted text-base leading-relaxed line-clamp-4">{desc}</p>
+              <p className="text-muted text-sm md:text-base leading-relaxed line-clamp-3 md:line-clamp-4">{desc}</p>
             )}
 
             <div className="flex gap-3 flex-wrap">
@@ -322,7 +331,7 @@ function HeroSlide({ manga }: { manga: Manga }) {
 
             <Link
               to={`/manga/${manga.id}`}
-              className="inline-flex items-center gap-2 bg-accent hover:bg-pink-500 text-dark font-bold px-6 py-3 rounded-xl text-sm tracking-wide transition-all duration-300 hover:shadow-lg hover:shadow-accent/30"
+              className="inline-flex items-center gap-2 bg-accent hover:bg-pink-500 text-dark font-bold px-6 py-3 rounded-xl text-sm tracking-wide transition-all duration-300 hover:shadow-lg hover:shadow-accent/30 self-start"
             >
               <i className="fa-solid fa-book-open" />
               VIEW DETAILS
