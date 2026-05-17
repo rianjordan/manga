@@ -10,11 +10,12 @@ export function useMangaSearch(params: SearchParams) {
   })
 }
 
-export function useManga(id: string) {
+export function useManga(id: string, options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: ['manga', id],
     queryFn: () => mangaService.getById(id),
     staleTime: 300_000,
+    enabled: options?.enabled !== false && !!id,
   })
 }
 

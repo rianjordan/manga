@@ -133,7 +133,7 @@ export function HomePage() {
     <div className="flex flex-col gap-10">
       {/* Hero Carousel */}
       {featured.length > 0 && (
-        <div className="relative group h-[750px] sm:h-[650px] md:h-[550px] w-full overflow-hidden rounded-2xl border border-gray-800/40 shadow-2xl hero-carousel-container">
+        <div className="relative group h-[500px] sm:h-[550px] md:h-[550px] w-full overflow-hidden rounded-2xl border border-gray-800/40 shadow-2xl hero-carousel-container">
           {featured.slice(0, 5).map((manga, idx) => (
             <div
               key={manga.id}
@@ -193,11 +193,11 @@ export function HomePage() {
             </span>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+          <div className="flex overflow-x-auto md:grid md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 pb-3.5 md:pb-0 scroll-section">
             {recentHistory.map((entry) => (
               <div
                 key={entry.chapterId}
-                className="relative bg-card/65 backdrop-blur-md rounded-2xl p-3 border border-gray-800/40 flex gap-4 hover:border-accent/40 transition-all duration-300 group"
+                className="w-[275px] sm:w-[300px] md:w-auto flex-shrink-0 md:flex-shrink relative bg-card/65 backdrop-blur-md rounded-2xl p-3 border border-gray-800/40 flex gap-4 hover:border-accent/40 transition-all duration-300 group"
               >
                 {/* Cover art image */}
                 <div className="w-16 h-24 rounded-lg overflow-hidden flex-shrink-0 relative">
@@ -268,7 +268,7 @@ export function HomePage() {
         <section className="flex flex-col gap-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-2 h-8 bg-emerald-500 rounded-full" />
+              <div className="w-2 h-8 bg-accent rounded-full" />
               <h2 className="text-2xl font-black text-white uppercase tracking-tight">New This Week</h2>
             </div>
             <Link
@@ -342,7 +342,7 @@ export function HomePage() {
 
         {/* 5x4 Manga Grid with Smooth Tab Switch Loading */}
         {trendingLoading ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 sm:gap-6">
             {Array.from({ length: 10 }).map((_, i) => (
               <div 
                 key={i} 
@@ -354,7 +354,7 @@ export function HomePage() {
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 sm:gap-6">
             {trending.map((manga: Manga, i: number) => (
               <MangaCard key={manga.id} manga={manga} index={i} />
             ))}
@@ -363,8 +363,8 @@ export function HomePage() {
 
         {/* Dynamic bottom pagination */}
         {totalPages > 1 && (
-          <div className="flex justify-end items-center mt-6 mb-8 gap-4">
-            <div className="flex items-center gap-2 pr-4 border-r border-gray-800/60 mr-2">
+          <div className="flex justify-center sm:justify-end items-center mt-6 mb-8 gap-3 sm:gap-4">
+            <div className="flex items-center gap-2 pr-3 sm:pr-4 border-r border-gray-800/60 mr-1 sm:mr-2">
               <span className="text-muted text-xs font-bold uppercase tracking-widest">Page</span>
               <span className="text-white font-black text-sm">
                 {String(page).padStart(2, '0')}{' '}
@@ -438,45 +438,70 @@ function HeroSlide({ manga }: { manga: Manga }) {
   const coverRel = manga.relationships.find((r) => r.type === 'cover_art')
   const coverFile = coverRel?.attributes?.fileName as string | undefined
   const tags = manga.attributes.tags?.slice(0, 4) ?? []
+  const coverPath = coverFile ? coverUrl(manga.id, coverFile) : ''
 
   return (
-    <section className="relative hero-slide-bg overflow-hidden h-full">
-      <div className="grid grid-cols-1 md:grid-cols-[380px_1fr] gap-6 md:gap-14 p-5 md:p-12 items-center h-full pb-16 md:pb-12">
+    <section className="relative hero-slide-bg overflow-hidden h-full flex items-end md:items-center">
+      {/* Mobile-only full-bleed background cover art with premium glassmorphism overlay */}
+      {coverPath && (
+        <div
+          className="absolute inset-0 bg-cover bg-center md:hidden transition-all duration-700 scale-105 pointer-events-none"
+          style={{
+            backgroundImage: `url(${coverPath})`,
+            filter: 'blur(4px) brightness(0.35)',
+          }}
+        />
+      )}
+      {/* Unified dark/light-aware gradient background overlay for mobile */}
+      <div className="absolute inset-0 bg-gradient-to-t from-[#121212] via-[#121212]/80 to-transparent md:hidden" />
+      <div className="absolute inset-0 bg-gradient-to-t from-slate-100 via-slate-100/80 to-transparent hidden light-mode:block md:hidden" />
+
+      {/* Slide main grid layout */}
+      <div className="relative z-10 w-full grid grid-cols-1 md:grid-cols-[320px_1fr] lg:grid-cols-[380px_1fr] gap-6 md:gap-14 p-5 sm:p-8 md:p-12 items-center h-full pb-20 md:pb-12">
+        {/* Desktop-only cover art column */}
         {coverFile && (
-          <div className="relative h-full flex items-center justify-center max-h-[220px] md:max-h-[460px] flex-shrink-0">
+          <Link
+            to={`/manga/${manga.id}`}
+            className="hidden md:flex relative h-full items-center justify-center max-h-[460px] flex-shrink-0 transition-all duration-500 hover:scale-[1.03] cursor-pointer"
+          >
             <img
-              src={coverUrl(manga.id, coverFile)}
+              src={coverPath}
               alt={title}
-              className="max-h-full object-contain rounded-xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-white/5"
+              className="max-h-full object-contain rounded-2xl shadow-[0_25px_60px_rgba(0,0,0,0.65)] border border-white/10"
             />
-          </div>
+          </Link>
         )}
 
-        <div className="flex flex-col justify-center min-w-0">
-          <div className="space-y-4 md:space-y-6">
+        {/* Content Column (Adapts perfectly on both Mobile and Desktop) */}
+        <div className="flex flex-col justify-center min-w-0 md:bg-transparent bg-black/45 md:backdrop-blur-none backdrop-blur-md md:p-0 p-5 rounded-2xl border md:border-none border-white/5 shadow-2xl">
+          <div className="space-y-3.5 md:space-y-6">
             <div className="flex items-center gap-3">
-              <span className="bg-accent text-dark px-3 py-1 rounded-md text-xs font-black uppercase tracking-widest shadow-lg shadow-accent/20">
+              <span className="bg-accent text-dark px-3 py-1 rounded-md text-[10px] sm:text-xs font-black uppercase tracking-widest shadow-lg shadow-accent/20">
                 {status.replace('_', ' ')}
               </span>
-              <span className="text-accent/80 font-extrabold text-xs">
+              <span className="text-accent/80 font-extrabold text-[10px] sm:text-xs">
                 <i className="fa-solid fa-fire-flame-curved mr-1.5 animate-pulse" />
                 Featured
               </span>
             </div>
 
-            <h1 className="text-3xl sm:text-5xl xl:text-6xl font-black uppercase tracking-tight leading-[0.95] text-white drop-shadow-2xl line-clamp-2">
-              {title}
-            </h1>
+            <Link to={`/manga/${manga.id}`} className="group/title block w-fit">
+              <h1 className="text-xl sm:text-3xl md:text-5xl xl:text-6xl font-black uppercase tracking-tight leading-[1.0] text-white group-hover/title:text-accent drop-shadow-2xl line-clamp-2 transition-colors duration-300 cursor-pointer">
+                {title}
+              </h1>
+            </Link>
 
             {desc && (
-              <p className="text-muted text-xs sm:text-sm md:text-base leading-relaxed line-clamp-2 sm:line-clamp-3 md:line-clamp-4">{desc}</p>
+              <p className="text-muted text-[11px] sm:text-xs md:text-sm lg:text-base leading-relaxed line-clamp-3 md:line-clamp-4">
+                {desc}
+              </p>
             )}
 
-            <div className="flex gap-2 flex-wrap">
+            <div className="flex gap-1.5 flex-wrap">
               {tags.map((tag: Tag) => (
                 <span
                   key={tag.id}
-                  className="px-2.5 py-1 rounded-full text-[10px] sm:text-xs font-bold bg-white/5 text-gray-300 border border-white/10"
+                  className="px-2.5 py-1 rounded-full text-[9px] sm:text-[11px] font-bold bg-white/5 text-gray-300 border border-white/10"
                 >
                   {tag.attributes.name.en}
                 </span>
@@ -485,7 +510,7 @@ function HeroSlide({ manga }: { manga: Manga }) {
 
             <Link
               to={`/manga/${manga.id}`}
-              className="inline-flex items-center gap-2 bg-accent hover:bg-pink-500 text-dark font-black px-6 py-3 rounded-xl text-xs sm:text-sm tracking-wide transition-all duration-300 hover:shadow-lg hover:shadow-accent/30 self-start shadow-md shadow-accent/15"
+              className="inline-flex items-center gap-2 bg-accent hover:bg-pink-500 text-dark font-black px-5 py-2.5 sm:px-6 sm:py-3 rounded-xl text-xs sm:text-sm tracking-wide transition-all duration-300 hover:shadow-lg hover:shadow-accent/30 self-start shadow-md shadow-accent/15"
             >
               <i className="fa-solid fa-book-open" />
               VIEW DETAILS

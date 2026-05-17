@@ -293,11 +293,11 @@ export function MangaDetailPage() {
     <div className="flex flex-col gap-8">
       <div className="grid grid-cols-1 md:grid-cols-[300px_1fr] gap-8">
         {coverFile && (
-          <div className="relative">
+          <div className="relative max-w-[240px] md:max-w-none mx-auto w-full">
             <img
               src={coverUrl(manga.id, coverFile)}
               alt={title}
-              className="w-full aspect-[2/3] object-cover rounded-xl shadow-2xl"
+              className="w-full aspect-[2/3] object-cover rounded-xl shadow-2xl border border-white/5"
             />
           </div>
         )}
@@ -388,7 +388,7 @@ export function MangaDetailPage() {
             ))}
           </div>
 
-          <div className="flex gap-3 mt-2">
+          <div className="flex flex-col sm:flex-row gap-3 mt-2">
             <Link
               to={
                 earliestChapter
@@ -396,17 +396,17 @@ export function MangaDetailPage() {
                   : '#'
               }
               onClick={handleStartReading}
-              className="inline-flex items-center gap-2 bg-accent hover:bg-pink-500 text-dark font-bold px-6 py-3 rounded-xl text-sm tracking-wide transition-all hover:shadow-lg hover:shadow-accent/30"
+              className="inline-flex items-center justify-center gap-2 bg-accent hover:bg-pink-500 text-dark font-bold px-6 py-3 rounded-xl text-sm tracking-wide transition-all hover:shadow-lg hover:shadow-accent/30 w-full sm:w-auto text-center"
             >
               <i className="fa-solid fa-book-open" />
               {earliestChapter ? 'START READING' : 'NO CHAPTERS'}
             </Link>
 
-            <div className="relative">
+            <div className="relative w-full sm:w-auto">
               <button
                 type="button"
                 onClick={() => setShowStatusDropdown(!showStatusDropdown)}
-                className={`inline-flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-bold tracking-wide transition-all cursor-pointer ${
+                className={`inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-sm font-bold tracking-wide transition-all cursor-pointer w-full sm:w-auto ${
                   followStatus
                     ? 'bg-accent/15 text-accent border border-accent/30'
                     : 'bg-card text-muted border border-gray-700/50 hover:text-accent'

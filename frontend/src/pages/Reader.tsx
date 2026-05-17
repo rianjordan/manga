@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import { useChapterPages, useChapter, useMangaFeed } from '../hooks/useManga'
+import { useChapterPages, useChapter, useMangaFeed, useManga } from '../hooks/useManga'
 import { imageUrl, api } from '../lib/api'
 import { useSettings, useAuth } from '../store'
 import { useReadingHistory } from '../store/user-data'
@@ -29,7 +29,21 @@ export function ReaderPage() {
 
   const mangaRel = chapterData?.data?.relationships?.find((r: { type: string }) => r.type === 'manga')
   const mangaId = mangaRel?.id ?? ''
-  const mangaTitle = (mangaRel?.attributes as { title?: Record<string, string> } | undefined)?.title?.en
+
+  // Fetch full manga details to resolve robust title and cover art
+  const { data: mangaData } = useManga(mangaId, { enabled: !!mangaId })
+
+  // Safely extract the title from mangaData or falls back to relationship attributes, ensuring we handle non-EN languages
+  const mainTitleObj = mangaData?.data?.attributes?.title
+  const relTitleObj = (mangaRel?.attributes as { title?: Record<string, string> } | undefined)?.title
+  const mainMangaTitle = mainTitleObj ? (mainTitleObj.en ?? Object.values(mainTitleObj)[0]) : undefined
+  const relMangaTitle = relTitleObj ? (relTitleObj.en ?? Object.values(relTitleObj)[0]) : undefined
+  const mangaTitle = mainMangaTitle || relMangaTitle || 'Manga'
+
+  // Safely get cover file to save in reading history
+  const coverRel = mangaData?.data?.relationships?.find((r: { type: string }) => r.type === 'cover_art')
+  const coverFile = (coverRel?.attributes as { fileName?: string } | undefined)?.fileName ?? ''
+
   const chapterNum = chapterData?.data?.attributes?.chapter
   const chapterTitle = chapterData?.data?.attributes?.title
   const currentLang = chapterData?.data?.attributes?.translatedLanguage ?? 'en'
@@ -329,14 +343,14 @@ export function ReaderPage() {
     if (!chapterId || !mangaTitle) return
     addEntry({
       mangaId,
-      mangaTitle: mangaTitle ?? 'Manga',
-      coverFile: '',
+      mangaTitle: mangaTitle,
+      coverFile: coverFile,
       chapterId,
       chapterNumber: chapterNum ?? null,
       page: currentPage + 1,
       readAt: new Date().toISOString(),
     })
-  }, [currentPage, chapterId, mangaTitle, mangaId])
+  }, [currentPage, chapterId, mangaTitle, mangaId, coverFile, chapterNum, addEntry])
 
   // Preload images
   useEffect(() => {
