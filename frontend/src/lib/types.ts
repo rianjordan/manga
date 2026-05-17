@@ -81,6 +81,16 @@ export interface ChapterListResponse {
   offset: number
 }
 
+export interface MangaStatistics {
+  rating: {
+    average: number | null
+    bayesian: number
+  }
+  follows: number
+  comments: number | null
+  rating6MonthsAverage: number | null
+}
+
 export interface SearchParams {
   ids?: string[]
   title?: string

@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { useManga, useMangaFeed, useMangaSearch } from '../hooks/useManga'
-import { coverUrl } from '../services/manga'
+import { coverUrl, mangaService } from '../services/manga'
 import { useFollows, useReadingHistory } from '../store/user-data'
 import { useAuth } from '../store'
 import { useToast } from '../store/toast'
 import { api } from '../lib/api'
 import { MangaCard } from '../components/ui/MangaCard'
-import type { Chapter, Tag, Manga } from '../lib/types'
+import type { Chapter, Tag, Manga, MangaStatistics } from '../lib/types'
 
 const readingStatuses = [
   { id: 'reading', label: 'Reading', color: 'bg-emerald-500 text-emerald-400' },
@@ -39,13 +39,17 @@ export function MangaDetailPage() {
   const [selectedLang, setSelectedLang] = useState<string | null>(null)
   const [chapterQuery, setChapterQuery] = useState('')
   const [showStatusDropdown, setShowStatusDropdown] = useState(false)
-  const [stats, setStats] = useState({
-    views: 0,
-    averageRating: 0,
-    totalRatings: 0,
-    userRating: 0
+  
+  // MangaDex statistics from official API
+  const [stats, setStats] = useState<MangaStatistics>({
+    rating: {
+      average: null,
+      bayesian: 0,
+    },
+    follows: 0,
+    comments: null,
+    rating6MonthsAverage: null,
   })
-  const [hoverRating, setHoverRating] = useState(0)
   const [comments, setComments] = useState<any[]>([])
   const [commentText, setCommentText] = useState('')
   const [commentSubmitting, setCommentSubmitting] = useState(false)
@@ -56,19 +60,14 @@ export function MangaDetailPage() {
   const { isLoggedIn, username: currentUsername } = useAuth()
   const { addToast } = useToast()
 
-  // Load Stats, views & comments
+  // Load MangaDex statistics and comments
   const loadStatsAndComments = async () => {
     if (!id) return
     try {
-      // Fetch stats
-      const statsRes = await api.get<any>(`/manga/${id}/stats`)
+      // Fetch MangaDex statistics (rating, follows, etc.)
+      const statsRes = await mangaService.getStatistics(id)
       if (statsRes) {
-        setStats({
-          views: statsRes.views ?? 0,
-          averageRating: statsRes.averageRating ?? 0,
-          totalRatings: statsRes.totalRatings ?? 0,
-          userRating: statsRes.userRating ?? 0
-        })
+        setStats(statsRes)
       }
 
       // Fetch comments
@@ -77,32 +76,15 @@ export function MangaDetailPage() {
         setComments(commentsRes.data)
       }
     } catch (e) {
-      console.error('Failed to load manga stats or comments:', e)
+      console.error('Failed to load manga statistics or comments:', e)
     }
   }
 
   useEffect(() => {
     if (!id) return
     
-    // Increment view count once on page visit
-    api.post(`/manga/${id}/views`).catch(() => {})
-
     loadStatsAndComments()
   }, [id])
-
-  const handleRate = async (rating: number) => {
-    if (!isLoggedIn) {
-      addToast('warning', 'Please log in to rate this manga.')
-      return
-    }
-    try {
-      await api.post(`/manga/${id}/rating`, { rating })
-      addToast('success', `Rated ${rating} star${rating > 1 ? 's' : ''}!`)
-      loadStatsAndComments()
-    } catch (err: any) {
-      addToast('error', err.message || 'Failed to submit rating.')
-    }
-  }
 
   const handleCommentSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -351,39 +333,43 @@ export function MangaDetailPage() {
               )}
             </div>
 
-            {/* Stats Row: Views & Star Rating */}
+            {/* Stats Row: MangaDex Official Ratings & Follows */}
             <div className="flex flex-wrap items-center gap-4 bg-card/40 border border-white/5 p-3 rounded-xl mb-2 text-xs font-bold text-muted uppercase">
               <span className="flex items-center gap-1.5 text-white/80">
-                <i className="fa-solid fa-eye text-accent text-sm" />
-                <span>{stats.views.toLocaleString()} Views</span>
+                <i className="fa-solid fa-bookmark text-accent text-sm" />
+                <span>{stats.follows.toLocaleString()} Follows</span>
               </span>
               <span className="h-3 w-px bg-gray-800" />
               <span className="flex items-center gap-1.5 text-white/80">
                 <i className="fa-solid fa-star text-amber-400 text-sm" />
-                <span>{stats.averageRating ? `${stats.averageRating} / 5` : 'No rating'} ({stats.totalRatings} votes)</span>
+                <span title="Official MangaDex Bayesian Rating">
+                  {stats.rating.bayesian ? `${(stats.rating.bayesian).toFixed(2)} / 10` : 'No rating'} (Bayesian)
+                </span>
               </span>
               
-              <span className="h-3 w-px bg-gray-800" />
+              {stats.rating.average && (
+                <>
+                  <span className="h-3 w-px bg-gray-800" />
+                  <span className="flex items-center gap-1.5 text-white/80">
+                    <i className="fa-solid fa-chart-line text-sky-400 text-sm" />
+                    <span title="Official MangaDex Mean Rating">
+                      {stats.rating.average.toFixed(2)} / 10 (Mean)
+                    </span>
+                  </span>
+                </>
+              )}
               
-              {/* Interactive Star Rating Selector */}
-              <div className="flex items-center gap-1">
-                <span className="mr-1 text-[10px] lowercase text-muted">your rating:</span>
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <button
-                    key={star}
-                    onClick={() => handleRate(star)}
-                    className="p-0.5 cursor-pointer text-sm transition-transform hover:scale-125 bg-transparent border-none"
-                    title={`Rate ${star} Stars`}
-                  >
-                    <i className={`fa-solid fa-star ${
-                      (hoverRating || stats.userRating) >= star ? 'text-amber-400' : 'text-gray-700'
-                    }`}
-                    onMouseEnter={() => setHoverRating(star)}
-                    onMouseLeave={() => setHoverRating(0)}
-                    />
-                  </button>
-                ))}
-              </div>
+              {stats.rating6MonthsAverage && (
+                <>
+                  <span className="h-3 w-px bg-gray-800" />
+                  <span className="flex items-center gap-1.5 text-white/80 text-[10px]">
+                    <i className="fa-solid fa-calendar text-purple-400 text-xs" />
+                    <span title="Last 6 months average">
+                      {stats.rating6MonthsAverage.toFixed(2)} (6mo)
+                    </span>
+                  </span>
+                </>
+              )}
             </div>
           </div>
 

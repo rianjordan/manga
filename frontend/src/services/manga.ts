@@ -6,6 +6,7 @@ import type {
   ChapterPages,
   SearchParams,
   CoverArt,
+  MangaStatistics,
 } from '../lib/types'
 
 export function coverUrl(mangaId: string, fileName: string): string {
@@ -73,6 +74,19 @@ export const mangaService = {
       limit: 100,
       order: { volume: 'asc' },
     }),
+
+  // Fetch MangaDex statistics: rating (average & Bayesian), follows, etc.
+  getStatistics: async (mangaId: string): Promise<MangaStatistics | null> => {
+    try {
+      const response = await api.get<{ statistics: Record<string, MangaStatistics> }>(
+        `/statistics/manga/${mangaId}`
+      )
+      return response.statistics?.[mangaId] ?? null
+    } catch (err) {
+      console.error('Failed to fetch manga statistics:', err)
+      return null
+    }
+  },
 }
 
 export const chapterService = {
