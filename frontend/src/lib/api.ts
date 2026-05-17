@@ -89,7 +89,8 @@ export const api = {
     if (params) {
       for (const [key, value] of Object.entries(params)) {
         if (Array.isArray(value)) {
-          value.forEach((v) => searchParams.append(key, String(v)))
+          const arrayKey = key.endsWith('[]') ? key : `${key}[]`
+          value.forEach((v) => searchParams.append(arrayKey, String(v)))
         } else if (value !== null && typeof value === 'object') {
           for (const [subKey, subVal] of Object.entries(value)) {
             if (subVal !== undefined && subVal !== null) {
