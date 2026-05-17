@@ -357,17 +357,6 @@ export function HomePage() {
           </div>
         )}
       </section>
-
-      {/* Disclaimer */}
-      <div className="text-center py-8 border-t border-gray-800/40">
-        <p className="text-muted text-xs">
-          Data powered by{' '}
-          <a href="https://mangadex.org" target="_blank" rel="noopener noreferrer" className="text-accent hover:underline">
-            MangaDex
-          </a>
-          {' '}&middot; Reader's Haven is not affiliated with MangaDex
-        </p>
-      </div>
     </div>
   )
 }
