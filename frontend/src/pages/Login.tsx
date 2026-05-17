@@ -20,6 +20,23 @@ export function LoginPage() {
   const [forgotError, setForgotError] = useState('')
   const [forgotSuccess, setForgotSuccess] = useState('')
 
+  // Password Strength Checker for new password in forgot flow
+  const checkPasswordStrength = (pass: string) => {
+    let score = 0
+    if (!pass) return { score: 0, label: '', color: 'bg-transparent' }
+    if (pass.length >= 8) score += 1
+    if (/[A-Z]/.test(pass)) score += 1
+    if (/[!@#$%^&*(),.?":{}|<>]/.test(pass)) score += 1
+    if (/[0-9]/.test(pass)) score += 1
+
+    if (score <= 1) return { score: 25, label: 'Weak', color: 'bg-red-500 shadow-[0_0_8px_#ef4444]' }
+    if (score === 2) return { score: 50, label: 'Fair', color: 'bg-amber-500 shadow-[0_0_8px_#f59e0b]' }
+    if (score === 3) return { score: 75, label: 'Good', color: 'bg-blue-500 shadow-[0_0_8px_#3b82f6]' }
+    return { score: 100, label: 'Strong', color: 'bg-emerald-500 shadow-[0_0_8px_#10b981]' }
+  }
+
+  const strength = checkPasswordStrength(newPassword)
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
@@ -287,8 +304,19 @@ export function LoginPage() {
                     setForgotError('')
                     setForgotSuccess('')
 
-                    if (newPassword.length < 6) {
-                      setForgotError('Password must be at least 6 characters.')
+                    const hasUppercase = /[A-Z]/.test(newPassword)
+                    const hasSymbol = /[!@#$%^&*(),.?":{}|<>]/.test(newPassword)
+
+                    if (newPassword.length < 8) {
+                      setForgotError('Password must be at least 8 characters.')
+                      return
+                    }
+                    if (!hasUppercase) {
+                      setForgotError('Password must contain at least one uppercase letter.')
+                      return
+                    }
+                    if (!hasSymbol) {
+                      setForgotError('Password must contain at least one symbol (!@#$%^&* etc.).')
                       return
                     }
 
@@ -333,6 +361,44 @@ export function LoginPage() {
                         className="w-full bg-[#2A2A2A] border border-gray-700/50 rounded-xl py-3 pl-11 pr-4 text-sm text-white placeholder-gray-500 outline-none transition-all duration-300 focus:border-accent focus:ring-2 focus:ring-accent/20"
                       />
                     </div>
+
+                    {/* Strength Indicator Widget */}
+                    {newPassword && (
+                      <div className="mt-2 flex flex-col gap-1.5 animate-fade-in">
+                        <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-wider">
+                          <span className="text-muted">Strength:</span>
+                          <span className={
+                            strength.label === 'Weak' ? 'text-red-400' :
+                            strength.label === 'Fair' ? 'text-amber-400' :
+                            strength.label === 'Good' ? 'text-blue-400' : 'text-emerald-400'
+                          }>
+                            {strength.label}
+                          </span>
+                        </div>
+                        <div className="h-1.5 w-full bg-black/30 rounded-full overflow-hidden border border-white/5">
+                          <div 
+                            className={`h-full transition-all duration-300 ${strength.color}`}
+                            style={{ width: `${strength.score}%` }}
+                          />
+                        </div>
+
+                        {/* Requirements List checklist */}
+                        <div className="flex flex-col gap-1 mt-1 text-[10px] text-muted font-semibold">
+                          <div className="flex items-center gap-1.5">
+                            <i className={`fa-solid ${newPassword.length >= 8 ? 'fa-circle-check text-emerald-400' : 'fa-circle text-white/10'}`} />
+                            <span>At least 8 characters</span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <i className={`fa-solid ${/[A-Z]/.test(newPassword) ? 'fa-circle-check text-emerald-400' : 'fa-circle text-white/10'}`} />
+                            <span>At least 1 uppercase letter</span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <i className={`fa-solid ${/[!@#$%^&*(),.?":{}|<>]/.test(newPassword) ? 'fa-circle-check text-emerald-400' : 'fa-circle text-white/10'}`} />
+                            <span>At least 1 symbol (!@#$%^&*...)</span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex flex-col gap-2">

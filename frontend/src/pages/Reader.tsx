@@ -11,12 +11,14 @@ export function ReaderPage() {
   const { data: pagesData, isLoading: pagesLoading } = useChapterPages(chapterId!)
   const { data: chapterData } = useChapter(chapterId!)
   const { readerMode, imageQuality } = useSettings()
-  const { addEntry } = useReadingHistory()
+  const { addEntry, history } = useReadingHistory()
 
   const [currentPage, setCurrentPage] = useState(0)
   const [loadedPages, setLoadedPages] = useState<Set<number>>(new Set([0, 1, 2]))
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [isDownloading, setIsDownloading] = useState(false)
+  const [showChapterModal, setShowChapterModal] = useState(false)
+  const [modalSearch, setModalSearch] = useState('')
   const containerRef = useRef<HTMLDivElement>(null)
 
   const pages = pagesData?.chapter
@@ -45,6 +47,113 @@ export function ReaderPage() {
   const currentIndex = sortedChapters.findIndex((ch) => ch.id === chapterId)
   const prevChapter = currentIndex > 0 ? sortedChapters[currentIndex - 1] : null
   const nextChapter = currentIndex < sortedChapters.length - 1 && currentIndex !== -1 ? sortedChapters[currentIndex + 1] : null
+
+  const filteredModalChapters = sortedChapters.filter((ch) => {
+    if (!modalSearch.trim()) return true
+    const searchLower = modalSearch.toLowerCase()
+    const chNum = ch.attributes.chapter ?? ''
+    const chTitle = ch.attributes.title ?? ''
+    return chNum.toLowerCase().includes(searchLower) || chTitle.toLowerCase().includes(searchLower)
+  }).reverse()
+
+  const renderChapterModal = () => {
+    if (!showChapterModal) return null
+    return (
+      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+        {/* Backdrop */}
+        <div 
+          className="absolute inset-0 bg-black/85 backdrop-blur-md cursor-pointer transition-opacity duration-300"
+          onClick={() => setShowChapterModal(false)}
+        />
+        
+        {/* Modal Content */}
+        <div className="relative w-full max-w-xl bg-[#151518]/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl flex flex-col max-h-[75vh] overflow-hidden transform transition-all duration-300 scale-100 animate-scale-up">
+          {/* Modal Header */}
+          <div className="p-5 border-b border-white/5 flex items-center justify-between">
+            <div>
+              <h3 className="text-white font-black text-lg uppercase tracking-tight">Jump to Chapter</h3>
+              <p className="text-muted text-[10px] font-bold uppercase tracking-wider mt-0.5 line-clamp-1">{mangaTitle}</p>
+            </div>
+            <button
+              onClick={() => setShowChapterModal(false)}
+              className="w-9 h-9 rounded-xl bg-white/5 hover:bg-white/10 text-white hover:text-accent transition-colors flex items-center justify-center cursor-pointer"
+            >
+              <i className="fa-solid fa-xmark text-sm" />
+            </button>
+          </div>
+
+          {/* Search Input */}
+          <div className="p-4 border-b border-white/5 bg-black/35">
+            <div className="relative">
+              <i className="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-muted text-xs" />
+              <input
+                type="text"
+                placeholder="Search chapter number or title..."
+                value={modalSearch}
+                onChange={(e) => setModalSearch(e.target.value)}
+                className="w-full bg-white/5 border border-white/10 focus:border-accent rounded-xl pl-10 pr-4 py-2.5 text-xs text-white placeholder-muted focus:outline-none transition-colors"
+              />
+            </div>
+          </div>
+
+          {/* Chapters List */}
+          <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-2">
+            {filteredModalChapters.length === 0 ? (
+              <div className="py-12 text-center text-muted text-xs font-semibold">
+                No chapters found.
+              </div>
+            ) : (
+              filteredModalChapters.map((ch) => {
+                const chNum = ch.attributes.chapter
+                const chTitle = ch.attributes.title
+                const isCurrent = ch.id === chapterId
+                const isRead = history.some((h) => h.chapterId === ch.id)
+
+                return (
+                  <button
+                    key={ch.id}
+                    onClick={() => {
+                      setShowChapterModal(false)
+                      navigate(`/reader/${ch.id}`)
+                    }}
+                    className={`w-full text-left p-3.5 rounded-xl border flex items-center justify-between transition-all duration-300 group cursor-pointer ${
+                      isCurrent
+                        ? 'bg-accent/15 border-accent text-accent shadow-lg shadow-accent/5'
+                        : 'bg-white/5 hover:bg-white/10 border-white/5 text-gray-300 hover:text-white'
+                    }`}
+                  >
+                    <div className="min-w-0 flex-1 pr-4">
+                      <span className={`text-xs font-black tracking-wide block ${isCurrent ? 'text-accent' : 'text-white'}`}>
+                        Chapter {chNum ?? '0'}
+                      </span>
+                      {chTitle && (
+                        <span className="text-[10px] text-muted group-hover:text-gray-400 line-clamp-1 mt-0.5 font-medium">
+                          {chTitle}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-3 flex-shrink-0">
+                      {isRead && !isCurrent && (
+                        <span className="text-[10px] font-black text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
+                          ✓ READ
+                        </span>
+                      )}
+                      {isCurrent && (
+                        <span className="text-[10px] font-black text-accent bg-accent/20 px-2 py-0.5 rounded-md border border-accent/30 animate-pulse">
+                          READING
+                        </span>
+                      )}
+                      <i className="fa-solid fa-chevron-right text-[10px] text-muted group-hover:text-accent transition-colors" />
+                    </div>
+                  </button>
+                )
+              })
+            )}
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   // Reset page index on chapter change
   useEffect(() => {
@@ -191,20 +300,24 @@ export function ReaderPage() {
 
   if (readerMode === 'scroll') {
     return (
-      <ScrollReader
-        hash={hash}
-        imageList={imageList}
-        mangaTitle={mangaTitle}
-        chapterNum={chapterNum}
-        chapterTitle={chapterTitle}
-        navigate={navigate}
-        mangaId={mangaId}
-        downloadChapter={downloadChapter}
-        isDownloading={isDownloading}
-        prevChapter={prevChapter}
-        nextChapter={nextChapter}
-        volume={chapterData?.data?.attributes?.volume}
-      />
+      <>
+        <ScrollReader
+          hash={hash}
+          imageList={imageList}
+          mangaTitle={mangaTitle}
+          chapterNum={chapterNum}
+          chapterTitle={chapterTitle}
+          navigate={navigate}
+          mangaId={mangaId}
+          downloadChapter={downloadChapter}
+          isDownloading={isDownloading}
+          prevChapter={prevChapter}
+          nextChapter={nextChapter}
+          volume={chapterData?.data?.attributes?.volume}
+          onShowChapters={() => setShowChapterModal(true)}
+        />
+        {renderChapterModal()}
+      </>
     )
   }
 
@@ -340,6 +453,18 @@ export function ReaderPage() {
 
         <div className="h-4 w-px bg-white/20" />
 
+        {/* Dynamic Chapter List Trigger Button for Single Page Mode! */}
+        <button
+          onClick={() => setShowChapterModal(true)}
+          className="text-white hover:text-accent transition-colors flex items-center gap-1 text-xs font-bold cursor-pointer"
+          title="Open Chapter List"
+        >
+          <i className="fa-solid fa-list-ul text-xs" />
+          <span>Chapters</span>
+        </button>
+
+        <div className="h-4 w-px bg-white/20" />
+
         {nextChapter ? (
           <Link
             to={`/reader/${nextChapter.id}`}
@@ -356,6 +481,8 @@ export function ReaderPage() {
           </span>
         )}
       </div>
+
+      {renderChapterModal()}
 
       {/* Bottom progress bar */}
       <div className="h-1.5 bg-gray-800">
@@ -380,6 +507,7 @@ function ScrollReader({
   prevChapter,
   nextChapter,
   volume,
+  onShowChapters,
 }: {
   hash: string
   imageList: string[]
@@ -393,6 +521,7 @@ function ScrollReader({
   prevChapter: any
   nextChapter: any
   volume?: string | null
+  onShowChapters: () => void
 }) {
   const { imageQuality } = useSettings()
   const qualityPath = imageQuality === 'data-saver' ? 'data-saver' : 'data'
@@ -497,13 +626,13 @@ function ScrollReader({
           </button>
         )}
 
-        <Link
-          to={`/manga/${mangaId}`}
-          className="flex-1 flex items-center justify-center gap-2 border border-gray-800/60 hover:border-accent/40 bg-[#121212] hover:bg-accent/5 text-muted hover:text-accent px-6 py-3.5 rounded-xl text-sm font-bold transition-all"
+        <button
+          onClick={onShowChapters}
+          className="flex-1 flex items-center justify-center gap-2 border border-gray-800/60 hover:border-accent/40 bg-[#121212] hover:bg-accent/5 text-muted hover:text-accent px-6 py-3.5 rounded-xl text-sm font-bold transition-all cursor-pointer"
         >
           <i className="fa-solid fa-list-ul text-xs" />
           Chapter List
-        </Link>
+        </button>
 
         {nextChapter ? (
           <Link
