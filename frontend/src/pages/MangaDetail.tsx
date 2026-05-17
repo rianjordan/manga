@@ -55,7 +55,24 @@ export function MangaDetailPage() {
     }
   }
 
-  const chapters = allChapters.filter((ch) => ch.attributes.translatedLanguage === (activeLang ?? 'en'))
+  // Filter and sort chapters in descending order by chapter number (latest first)
+  const chapters = allChapters
+    .filter((ch) => ch.attributes.translatedLanguage === (activeLang ?? 'en'))
+    .sort((a, b) => {
+      const numA = parseFloat(a.attributes.chapter ?? '0') || 0
+      const numB = parseFloat(b.attributes.chapter ?? '0') || 0
+      return numB - numA
+    })
+
+  // Find the absolute earliest chapter (lowest chapter number, e.g. Chapter 1) to start reading
+  const earliestChapter = chapters.length > 0
+    ? [...chapters].sort((a, b) => {
+        const numA = parseFloat(a.attributes.chapter ?? '0') || 0
+        const numB = parseFloat(b.attributes.chapter ?? '0') || 0
+        return numA - numB
+      })[0]
+    : null
+
   const followStatus = getStatus(id!)
 
   const grouped = chapters.reduce(
@@ -71,13 +88,13 @@ export function MangaDetailPage() {
   const sortedVolumes = Object.entries(grouped).sort(([a], [b]) => Number(b) - Number(a))
 
   const handleStartReading = () => {
-    if (chapters.length > 0) {
+    if (earliestChapter) {
       addEntry({
         mangaId: id!,
         mangaTitle: title,
         coverFile: coverFile ?? '',
-        chapterId: chapters[chapters.length - 1].id,
-        chapterNumber: chapters[chapters.length - 1].attributes.chapter,
+        chapterId: earliestChapter.id,
+        chapterNumber: earliestChapter.attributes.chapter,
         page: 1,
         readAt: new Date().toISOString(),
       })
@@ -130,15 +147,15 @@ export function MangaDetailPage() {
           <div className="flex gap-3 mt-2">
             <Link
               to={
-                chapters.length > 0
-                  ? `/reader/${chapters[chapters.length - 1].id}`
+                earliestChapter
+                  ? `/reader/${earliestChapter.id}`
                   : '#'
               }
               onClick={handleStartReading}
               className="inline-flex items-center gap-2 bg-accent hover:bg-pink-500 text-dark font-bold px-6 py-3 rounded-xl text-sm tracking-wide transition-all hover:shadow-lg hover:shadow-accent/30"
             >
               <i className="fa-solid fa-book-open" />
-              {chapters.length > 0 ? 'START READING' : 'NO CHAPTERS'}
+              {earliestChapter ? 'START READING' : 'NO CHAPTERS'}
             </Link>
 
             <button
