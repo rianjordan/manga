@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth, useSettings } from '../../store'
 import { useReadingHistory } from '../../store/user-data'
 import { coverUrl } from '../../services/manga'
@@ -9,6 +9,18 @@ export function Header() {
   const { theme, toggleTheme } = useSettings()
   const { getRecent } = useReadingHistory()
   const navigate = useNavigate()
+  const location = useLocation()
+  const [searchVal, setSearchVal] = useState('')
+
+  // Sync search input with URL search param 'q' or clear it when navigating away
+  useEffect(() => {
+    if (location.pathname === '/search') {
+      const params = new URLSearchParams(location.search)
+      setSearchVal(params.get('q') ?? '')
+    } else {
+      setSearchVal('')
+    }
+  }, [location])
 
   const [isBrowseOpen, setIsBrowseOpen] = useState(false)
   const [isHistoryOpen, setIsHistoryOpen] = useState(false)
@@ -184,11 +196,16 @@ export function Header() {
             type="text"
             placeholder="Search manga..."
             className="bg-transparent border-none outline-none text-sm w-36 lg:w-48 text-white placeholder-muted"
+            value={searchVal}
+            onChange={(e) => setSearchVal(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === 'Enter' && (e.target as HTMLInputElement).value.trim()) {
-                const searchParams = new URLSearchParams()
-                searchParams.set('q', (e.target as HTMLInputElement).value.trim())
-                navigate(`/search?${searchParams.toString()}`)
+              if (e.key === 'Enter') {
+                const trimmed = searchVal.trim()
+                if (trimmed) {
+                  navigate(`/search?q=${encodeURIComponent(trimmed)}`)
+                } else {
+                  navigate('/search')
+                }
               }
             }}
           />

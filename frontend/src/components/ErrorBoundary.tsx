@@ -1,5 +1,5 @@
 import React from 'react'
-import { Link } from 'react-router-dom'
+
 
 interface Props {
   children: React.ReactNode
@@ -51,13 +51,13 @@ export class ErrorBoundary extends React.Component<Props, State> {
               <i className="fa-solid fa-rotate-left" />
               Refresh Page
             </button>
-            <Link
-              to="/"
+            <a
+              href="/"
               className="inline-flex items-center gap-2 bg-card hover:bg-gray-800 text-muted font-bold px-6 py-3 rounded-xl text-sm transition-all border border-gray-700"
             >
               <i className="fa-solid fa-house" />
               Go Home
-            </Link>
+            </a>
           </div>
         </div>
       )
