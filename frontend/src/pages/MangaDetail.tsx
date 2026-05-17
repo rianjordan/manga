@@ -5,11 +5,21 @@ import { coverUrl } from '../services/manga'
 import { useFollows, useReadingHistory } from '../store/user-data'
 import type { Chapter, Tag } from '../lib/types'
 
+const readingStatuses = [
+  { id: 'reading', label: 'Reading', color: 'bg-emerald-500 text-emerald-400' },
+  { id: 'on_hold', label: 'On Hold', color: 'bg-amber-500 text-amber-400' },
+  { id: 'dropped', label: 'Dropped', color: 'bg-rose-500 text-rose-400' },
+  { id: 'plan_to_read', label: 'Plan to Read', color: 'bg-sky-500 text-sky-400' },
+  { id: 'completed', label: 'Completed', color: 'bg-indigo-500 text-indigo-400' },
+  { id: 're_reading', label: 'Re-Reading', color: 'bg-purple-500 text-purple-400' },
+]
+
 export function MangaDetailPage() {
   const { id } = useParams<{ id: string }>()
   const { data: mangaRes, isLoading } = useManga(id!)
   const [selectedLang, setSelectedLang] = useState<string | null>(null)
   const [chapterQuery, setChapterQuery] = useState('')
+  const [showStatusDropdown, setShowStatusDropdown] = useState(false)
 
   const { data: feedData } = useMangaFeed(id!, {
     limit: 500,
@@ -173,21 +183,76 @@ export function MangaDetailPage() {
               {earliestChapter ? 'START READING' : 'NO CHAPTERS'}
             </Link>
 
-            <button
-              onClick={() =>
-                followStatus
-                  ? unfollow(id!)
-                  : follow(id!, 'reading')
-              }
-              className={`inline-flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-bold tracking-wide transition-all ${
-                followStatus
-                  ? 'bg-accent/15 text-accent border border-accent/30'
-                  : 'bg-card text-muted border border-gray-700/50 hover:text-accent'
-              }`}
-            >
-              <i className="fa-solid fa-bookmark" />
-              {followStatus ? 'FOLLOWING' : 'FOLLOW'}
-            </button>
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setShowStatusDropdown(!showStatusDropdown)}
+                className={`inline-flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-bold tracking-wide transition-all cursor-pointer ${
+                  followStatus
+                    ? 'bg-accent/15 text-accent border border-accent/30'
+                    : 'bg-card text-muted border border-gray-700/50 hover:text-accent'
+                }`}
+              >
+                <i className="fa-solid fa-bookmark" />
+                <span>
+                  {followStatus
+                    ? readingStatuses.find((s) => s.id === followStatus)?.label ?? 'BOOKMARKED'
+                    : 'ADD TO LIST'}
+                </span>
+                <i className="fa-solid fa-chevron-down text-xs ml-1" />
+              </button>
+
+              {showStatusDropdown && (
+                <>
+                  <div 
+                    className="fixed inset-0 z-40" 
+                    onClick={() => setShowStatusDropdown(false)} 
+                  />
+                  <div className="absolute left-0 mt-2 w-56 rounded-xl bg-card border border-gray-800 shadow-2xl py-2 z-50 animate-fade-in">
+                    <div className="px-3 py-1.5 text-xs font-bold text-muted uppercase tracking-wider border-b border-gray-800/65 mb-1">
+                      Set Status
+                    </div>
+                    {readingStatuses.map((statusItem) => (
+                      <button
+                        key={statusItem.id}
+                        type="button"
+                        onClick={() => {
+                          follow(id!, statusItem.id)
+                          setShowStatusDropdown(false)
+                        }}
+                        className={`w-full flex items-center justify-between px-4 py-2.5 text-sm transition-colors hover:bg-white/5 cursor-pointer text-left ${
+                          followStatus === statusItem.id ? 'text-accent font-black' : 'text-gray-300'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <span className={`w-2.5 h-2.5 rounded-full ${statusItem.color.split(' ')[0]}`} />
+                          <span>{statusItem.label}</span>
+                        </div>
+                        {followStatus === statusItem.id && (
+                          <i className="fa-solid fa-check text-accent text-xs" />
+                        )}
+                      </button>
+                    ))}
+                    {followStatus && (
+                      <>
+                        <div className="h-px bg-gray-800 my-1.5" />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            unfollow(id!)
+                            setShowStatusDropdown(false)
+                          }}
+                          className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-rose-500 hover:bg-rose-500/10 transition-colors cursor-pointer text-left font-bold"
+                        >
+                          <i className="fa-solid fa-trash-can text-xs" />
+                          <span>Remove from List</span>
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         </div>
       </div>

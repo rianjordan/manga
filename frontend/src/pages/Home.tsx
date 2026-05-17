@@ -4,12 +4,16 @@ import { useMangaSearch } from '../hooks/useManga'
 import { MangaCard } from '../components/ui/MangaCard'
 import type { Manga, Tag } from '../lib/types'
 import { coverUrl } from '../services/manga'
+import { useReadingHistory } from '../store/user-data'
 
 export function HomePage() {
   const [currentSlide, setCurrentSlide] = useState(0)
   const [activeTab, setActiveTab] = useState<'latest' | 'popular' | 'completed'>('latest')
   const [page, setPage] = useState(1)
   const limit = 20
+
+  const { getRecent } = useReadingHistory()
+  const recentHistory = getRecent(5)
 
   // Featured carousel manga
   const { data: latestData, isLoading: latestLoading, isError: latestError } = useMangaSearch({
@@ -148,6 +152,69 @@ export function HomePage() {
             ))}
           </div>
         </div>
+      )}
+
+      {/* Recently Read History */}
+      {recentHistory.length > 0 && (
+        <section className="flex flex-col gap-6">
+          <div className="flex items-center justify-between border-b border-gray-800/40 pb-4">
+            <div className="flex items-center gap-3">
+              <div className="w-2 h-8 bg-accent rounded-full" />
+              <h2 className="text-2xl font-black text-white uppercase tracking-tight">Recently Read</h2>
+            </div>
+            <span className="text-xs text-muted font-semibold uppercase tracking-wider">
+              {recentHistory.length} manga in history
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+            {recentHistory.map((entry) => (
+              <div
+                key={entry.chapterId}
+                className="relative bg-card/65 backdrop-blur-md rounded-2xl p-3 border border-gray-800/40 flex gap-4 hover:border-accent/40 transition-all duration-300 group"
+              >
+                {/* Cover art image */}
+                <div className="w-16 h-24 rounded-lg overflow-hidden flex-shrink-0 relative">
+                  <img
+                    src={coverUrl(entry.mangaId, entry.coverFile)}
+                    alt={entry.mangaTitle}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = '/img/website/cover-placeholder.jpg'
+                    }}
+                  />
+                  <div className="absolute inset-0 bg-black/20" />
+                </div>
+
+                {/* Details */}
+                <div className="flex flex-col justify-between py-1 min-w-0 flex-grow">
+                  <div className="min-w-0">
+                    <Link
+                      to={`/manga/${entry.mangaId}`}
+                      className="font-bold text-sm text-white hover:text-accent transition-colors line-clamp-1 block"
+                      title={entry.mangaTitle}
+                    >
+                      {entry.mangaTitle}
+                    </Link>
+                    <span className="text-[10px] text-muted block mt-0.5">
+                      Last read {new Date(entry.readAt).toLocaleDateString()}
+                    </span>
+                  </div>
+
+                  <div className="flex flex-col gap-1.5">
+                    <Link
+                      to={`/reader/${entry.chapterId}`}
+                      className="inline-flex items-center gap-1.5 bg-accent/10 hover:bg-accent text-accent hover:text-dark text-xs font-bold px-3 py-1.5 rounded-lg transition-all duration-300 w-fit cursor-pointer border border-accent/20"
+                    >
+                      <i className="fa-solid fa-play text-[10px]" />
+                      <span>Ch. {entry.chapterNumber ?? '1'}</span>
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
       )}
 
       {/* Trending Updates Grid */}
