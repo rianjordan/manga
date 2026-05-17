@@ -270,6 +270,8 @@ export function MangaDetailPage() {
   )
 
   const sortedVolumes = Object.entries(grouped).sort(([a], [b]) => {
+    if (a === '0') return -1
+    if (b === '0') return 1
     const numA = parseFloat(a) || 0
     const numB = parseFloat(b) || 0
     return numB - numA

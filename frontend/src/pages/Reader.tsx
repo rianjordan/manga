@@ -192,8 +192,8 @@ export function ReaderPage() {
   const filteredChapters = allChapters.filter((ch) => ch.attributes.translatedLanguage === currentLang)
 
   const sortedChapters = [...filteredChapters].sort((a, b) => {
-    const aNum = parseFloat(a.attributes.chapter ?? '0')
-    const bNum = parseFloat(b.attributes.chapter ?? '0')
+    const aNum = parseFloat(a.attributes.chapter ?? '0') || 0
+    const bNum = parseFloat(b.attributes.chapter ?? '0') || 0
     return aNum - bNum
   })
 
