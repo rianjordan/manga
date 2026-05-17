@@ -42,7 +42,7 @@ export function Layout() {
       id="layout-root"
       className="min-h-screen flex flex-col text-white font-sans antialiased overflow-x-hidden transition-colors duration-300"
       style={{
-        backgroundImage: `linear-gradient(rgba(18, 18, 18, 0.92), rgba(18, 18, 18, 0.92)), url('/img/website/bg.jpg')`,
+        backgroundImage: `linear-gradient(rgba(12, 12, 12, 0.82), rgba(12, 12, 12, 0.82)), url('/img/website/bg.jpg')`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundAttachment: 'fixed',

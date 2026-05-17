@@ -248,11 +248,11 @@ export function Header() {
         />
       )}
       <aside
-        className={`fixed top-0 right-0 w-[300px] h-full bg-card shadow-[-10px_0_40px_rgba(0,0,0,0.6)] z-[60] flex flex-col transition-all duration-500 ease-out transform ${
+        className={`fixed top-0 right-0 w-[300px] h-[100dvh] bg-card shadow-[-10px_0_40px_rgba(0,0,0,0.6)] z-[60] flex flex-col transition-all duration-500 ease-out transform ${
           isSidebarOpen ? 'translate-x-0' : 'translate-x-full pointer-events-none invisible'
         }`}
       >
-        <div className="flex justify-between items-center p-6 border-b border-gray-800/50">
+        <div className="flex justify-between items-center p-6 border-b border-gray-800/50 flex-shrink-0">
           <span className="font-bold text-xl tracking-wide text-white">Reader's Haven</span>
           <button
             onClick={() => setIsSidebarOpen(false)}
@@ -261,24 +261,26 @@ export function Header() {
             <i className="fa-solid fa-xmark" />
           </button>
         </div>
-        <div className="p-5 flex flex-col gap-1 flex-grow overflow-y-auto">
+
+        {/* Scrollable menu content container */}
+        <div className="p-5 flex flex-col gap-1 flex-grow overflow-y-auto max-h-[calc(100dvh-80px)] select-none">
           <Link
             to="/"
-            className="flex items-center gap-4 text-white font-semibold p-3.5 rounded-xl hover:bg-accent/10 hover:text-accent transition-all duration-300 transform hover:translate-x-2"
+            className="flex items-center gap-4 text-white font-semibold p-3 rounded-xl hover:bg-accent/10 hover:text-accent transition-all duration-300 transform hover:translate-x-2"
             onClick={() => setIsSidebarOpen(false)}
           >
             <i className="fa-solid fa-house w-5 text-center text-muted" /> Home
           </Link>
           <Link
             to="/search"
-            className="flex items-center gap-4 text-white font-semibold p-3.5 rounded-xl hover:bg-accent/10 hover:text-accent transition-all duration-300 transform hover:translate-x-2"
+            className="flex items-center gap-4 text-white font-semibold p-3 rounded-xl hover:bg-accent/10 hover:text-accent transition-all duration-300 transform hover:translate-x-2"
             onClick={() => setIsSidebarOpen(false)}
           >
             <i className="fa-solid fa-compass w-5 text-center text-muted" /> Explore
           </Link>
           <Link
             to="/library"
-            className="flex items-center gap-4 text-white font-semibold p-3.5 rounded-xl hover:bg-accent/10 hover:text-accent transition-all duration-300 transform hover:translate-x-2"
+            className="flex items-center gap-4 text-white font-semibold p-3 rounded-xl hover:bg-accent/10 hover:text-accent transition-all duration-300 transform hover:translate-x-2"
             onClick={() => setIsSidebarOpen(false)}
           >
             <i className="fa-solid fa-bookmark w-5 text-center text-muted" /> My Library
@@ -288,26 +290,116 @@ export function Header() {
               toggleTheme()
               setIsSidebarOpen(false)
             }}
-            className="flex items-center gap-4 text-white font-semibold p-3.5 rounded-xl hover:bg-accent/10 hover:text-accent transition-all text-left duration-300 transform hover:translate-x-2 cursor-pointer"
+            className="flex items-center gap-4 text-white font-semibold p-3 rounded-xl hover:bg-accent/10 hover:text-accent transition-all text-left duration-300 transform hover:translate-x-2 cursor-pointer"
           >
             <i className={`fa-solid ${theme === 'dark' ? 'fa-moon' : 'fa-sun'} w-5 text-center text-muted`} />
             Toggle {theme === 'dark' ? 'Light' : 'Dark'} Mode
           </button>
-          <div className="h-px bg-gray-800/50 my-3" />
+
+          <div className="h-px bg-gray-800/40 my-2 flex-shrink-0" />
+
+          {/* Collapsible/Rich Catalog Section */}
+          <div className="flex flex-col gap-0.5">
+            <span className="text-[10px] font-black text-accent uppercase tracking-widest px-3.5 pt-2 pb-1 flex-shrink-0">
+              Browse Catalog
+            </span>
+            <Link
+              to="/search?type=manhwa"
+              className="flex items-center gap-4 text-white/80 font-medium p-2.5 rounded-xl hover:bg-accent/10 hover:text-accent transition-all duration-300 pl-6"
+              onClick={() => setIsSidebarOpen(false)}
+            >
+              <i className="fa-solid fa-circle-dot text-[6px] text-muted" /> Manhwa (Korean)
+            </Link>
+            <Link
+              to="/search?type=manga"
+              className="flex items-center gap-4 text-white/80 font-medium p-2.5 rounded-xl hover:bg-accent/10 hover:text-accent transition-all duration-300 pl-6"
+              onClick={() => setIsSidebarOpen(false)}
+            >
+              <i className="fa-solid fa-circle-dot text-[6px] text-muted" /> Manga (Japanese)
+            </Link>
+            <Link
+              to="/search?type=novel"
+              className="flex items-center gap-4 text-white/80 font-medium p-2.5 rounded-xl hover:bg-accent/10 hover:text-accent transition-all duration-300 pl-6"
+              onClick={() => setIsSidebarOpen(false)}
+            >
+              <i className="fa-solid fa-circle-dot text-[6px] text-muted" /> Novels
+            </Link>
+          </div>
+
+          <div className="h-px bg-gray-800/40 my-2 flex-shrink-0" />
+
+          {/* Genres Grid inside Mobile Menu */}
+          <div className="flex flex-col gap-1">
+            <span className="text-[10px] font-black text-accent uppercase tracking-widest px-3.5 pt-1 pb-2 flex-shrink-0">
+              Genres
+            </span>
+            <div className="grid grid-cols-2 gap-1.5 pl-3">
+              {['Action', 'Romance', 'Fantasy', 'Horror', 'Sci-Fi', 'Comedy', 'Drama', 'Slice of Life'].map((genre) => (
+                <Link
+                  key={genre}
+                  to={`/search?q=${genre}`}
+                  className="flex items-center gap-2 text-white/85 text-xs font-semibold p-2 rounded-lg hover:bg-accent/10 hover:text-accent transition-all"
+                  onClick={() => setIsSidebarOpen(false)}
+                >
+                  <i className="fa-solid fa-hashtag text-[8px] text-muted" />
+                  {genre}
+                </Link>
+              ))}
+            </div>
+          </div>
+
+          {/* Dynamic Recent Reading History inside Mobile Menu */}
+          {recentHistory.length > 0 && (
+            <>
+              <div className="h-px bg-gray-800/40 my-3 flex-shrink-0" />
+              <div className="flex flex-col gap-1">
+                <span className="text-[10px] font-black text-accent uppercase tracking-widest px-3.5 pt-1 pb-2 flex-shrink-0">
+                  Recently Read
+                </span>
+                <div className="flex flex-col gap-2 pl-3">
+                  {recentHistory.map((entry) => (
+                    <Link
+                      key={entry.chapterId}
+                      to={`/reader/${entry.chapterId}`}
+                      className="flex items-center gap-3 p-2 rounded-xl hover:bg-accent/10 transition-colors group"
+                      onClick={() => setIsSidebarOpen(false)}
+                    >
+                      <img
+                        src={entry.coverFile ? coverUrl(entry.mangaId, entry.coverFile) : 'https://placehold.co/40x60'}
+                        className="w-8 h-11 object-cover rounded-lg border border-gray-800/30 flex-shrink-0"
+                        alt={entry.mangaTitle}
+                      />
+                      <div className="min-w-0 flex-1">
+                        <div className="font-semibold text-xs text-white line-clamp-1 group-hover:text-accent transition-colors">
+                          {entry.mangaTitle}
+                        </div>
+                        <div className="text-[10px] text-muted">
+                          {entry.chapterNumber ? `Ch. ${entry.chapterNumber}` : 'Ch. Unknown'}
+                        </div>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
+
+          <div className="h-px bg-gray-800/50 my-3 flex-shrink-0" />
+
           {isLoggedIn ? (
             <button
               onClick={() => {
                 logout()
                 setIsSidebarOpen(false)
               }}
-              className="flex items-center gap-4 text-red-400 font-semibold p-3.5 rounded-xl hover:bg-red-500/10 transition-all text-left duration-300 transform hover:translate-x-2 cursor-pointer"
+              className="flex items-center gap-4 text-red-400 font-semibold p-3 rounded-xl hover:bg-red-500/10 transition-all text-left duration-300 transform hover:translate-x-2 cursor-pointer flex-shrink-0"
             >
               <i className="fa-solid fa-right-from-bracket w-5 text-center" /> Log Out ({username})
             </button>
           ) : (
             <Link
               to="/login"
-              className="flex items-center gap-4 text-accent font-semibold p-3.5 rounded-xl hover:bg-accent/10 hover:text-accent transition-all duration-300 transform hover:translate-x-2"
+              className="flex items-center gap-4 text-accent font-semibold p-3 rounded-xl hover:bg-accent/10 hover:text-accent transition-all duration-300 transform hover:translate-x-2 flex-shrink-0"
               onClick={() => setIsSidebarOpen(false)}
             >
               <i className="fa-solid fa-right-from-bracket w-5 text-center" /> Login / Sign Up

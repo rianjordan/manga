@@ -12,7 +12,7 @@
 }
 
 /* ═══════════════════════════════════════════════════════════
-   LIGHT MODE REDEFINITIONS
+   LIGHT MODE REDEFINITIONS & UI CONTRAST FIXES
    ═══════════════════════════════════════════════════════════ */
 .light-mode {
   --color-dark: #f8fafc;
@@ -20,18 +20,88 @@
   --color-card: #ffffff;
   --color-surface: #e2e8f0;
   --color-muted: #64748b;
+  color: #0f172a;
 }
 
-.light-mode .text-white {
+/* Force light text overrides on structural elements */
+.light-mode .text-white,
+.light-mode h1,
+.light-mode h2,
+.light-mode h3,
+.light-mode h4,
+.light-mode span.text-white,
+.light-mode div.text-white,
+.light-mode Link,
+.light-mode a {
   color: #0f172a !important;
 }
 
-.light-mode .text-muted {
+/* Maintain active accents */
+.light-mode .text-accent,
+.light-mode a.text-accent,
+.light-mode span.text-accent,
+.light-mode i.text-accent,
+.light-mode button.text-accent {
+  color: #D6336C !important;
+}
+
+.light-mode .text-muted,
+.light-mode p.text-muted,
+.light-mode span.text-muted,
+.light-mode i.text-muted {
   color: #64748b !important;
 }
 
+/* Force borders and dividers to be clean and light */
+.light-mode .border-gray-800,
+.light-mode .border-gray-700,
+.light-mode .border-gray-700\/50,
+.light-mode .border-gray-800\/40,
+.light-mode .border-gray-800\/50,
+.light-mode .border-white\/5,
+.light-mode .border-white\/10 {
+  border-color: #cbd5e1 !important;
+}
+
+.light-mode .divide-gray-800\/40 > :not([hidden]) ~ :not([hidden]),
+.light-mode .divide-y > :not([hidden]) ~ :not([hidden]) {
+  border-color: #cbd5e1 !important;
+}
+
+/* Input Fields overrides */
+.light-mode input {
+  color: #0f172a !important;
+  background-color: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+}
+
+.light-mode input::placeholder {
+  color: #94a3b8 !important;
+}
+
+/* Dynamic dropdown adjustments */
+.light-mode .bg-card,
+.light-mode div.bg-card,
+.light-mode aside.bg-card {
+  background-color: #ffffff !important;
+  border-color: #cbd5e1 !important;
+}
+
+.light-mode .hover\:bg-gray-800\/60:hover {
+  background-color: #f1f5f9 !important;
+}
+
+.light-mode .hover\:bg-accent\/10:hover {
+  background-color: rgba(214, 51, 108, 0.08) !important;
+}
+
+/* Highly visible background image configurations */
+#layout-root {
+  transition: background-image 0.5s ease-in-out;
+}
+
 .light-mode #layout-root {
-  background-image: linear-gradient(rgba(248, 250, 252, 0.82), rgba(248, 250, 252, 0.82)), url('/img/website/bg.jpg') !important;
+  background-image: linear-gradient(rgba(248, 250, 252, 0.70), rgba(248, 250, 252, 0.70)), url('/img/website/bg.jpg') !important;
 }
 
 /* Global scrollbar adjustments in light mode */
@@ -41,4 +111,8 @@
 
 .light-mode ::-webkit-scrollbar-thumb {
   background: #cbd5e1;
+}
+
+.light-mode ::-webkit-scrollbar-thumb:hover {
+  background: #D6336C;
 }
