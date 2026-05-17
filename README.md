@@ -14,7 +14,7 @@ A state-of-the-art, ad-free manga reader web application powered by the **MangaD
 [![React Query](https://img.shields.io/badge/React_Query-FF4154?style=for-the-badge&logo=react-query&logoColor=white)](https://tanstack.com/query/latest)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](LICENSE)
 
-[Live Demo](https://readers-haven.pages.dev) · [Report Bug](https://github.com/rianjordan/manga/issues) · [Request Feature](https://github.com/rianjordan/manga/issues)
+[Live Demo](https://novel-coral-phi.vercel.app/) · [Report Bug](https://github.com/rianjordan/manga/issues) · [Request Feature](https://github.com/rianjordan/manga/issues)
 
 </div>
 
@@ -164,17 +164,21 @@ cd frontend
 npm run build     # Outputs optimized bundle to /frontend/dist/
 ```
 
-### Deploy to Cloudflare Pages & Workers
+### Deploy Frontend to Vercel
+You can deploy the React SPA instantly to Vercel by importing the repository or using the CLI:
 ```bash
-# 1. Deploy Frontend Bundle
 cd frontend
-npx wrangler pages deploy dist/
+npm run build
+npx vercel --prod
+```
 
-# 2. Deploy Serverless BFF Worker
+### Deploy Serverless Edge Workers to Cloudflare
+```bash
+# 1. Deploy Serverless BFF Worker
 cd workers/api
 npx wrangler deploy
 
-# 3. Deploy Serverless Image Cache Worker
+# 2. Deploy Serverless Image Cache Worker
 cd workers/images
 npx wrangler deploy
 ```
