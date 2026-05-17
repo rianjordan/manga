@@ -191,10 +191,24 @@ export function ReaderPage() {
   const allChapters = feedData?.data ?? []
   const filteredChapters = allChapters.filter((ch) => ch.attributes.translatedLanguage === currentLang)
 
-  const sortedChapters = [...filteredChapters].sort((a, b) => {
+  const sortedChaptersList = [...filteredChapters].sort((a, b) => {
     const aNum = parseFloat(a.attributes.chapter ?? '0') || 0
     const bNum = parseFloat(b.attributes.chapter ?? '0') || 0
     return aNum - bNum
+  })
+
+  const sortedChapters: typeof sortedChaptersList = []
+  const seenChapters = new Set<string>()
+  sortedChaptersList.forEach((ch) => {
+    const num = ch.attributes.chapter
+    if (num) {
+      if (!seenChapters.has(num)) {
+        seenChapters.add(num)
+        sortedChapters.push(ch)
+      }
+    } else {
+      sortedChapters.push(ch)
+    }
   })
 
   const currentIndex = sortedChapters.findIndex((ch) => ch.id === chapterId)

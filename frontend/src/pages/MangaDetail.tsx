@@ -229,14 +229,27 @@ export function MangaDetailPage() {
     }
   }
 
-  // Filter and sort chapters in descending order by chapter number (latest first)
-  const chapters = allChapters
+  const sortedChaptersList = allChapters
     .filter((ch) => ch.attributes.translatedLanguage === (activeLang ?? 'en'))
     .sort((a, b) => {
       const numA = parseFloat(a.attributes.chapter ?? '0') || 0
       const numB = parseFloat(b.attributes.chapter ?? '0') || 0
       return numB - numA
     })
+
+  const chapters: Chapter[] = []
+  const seenChapters = new Set<string>()
+  sortedChaptersList.forEach((ch) => {
+    const num = ch.attributes.chapter
+    if (num) {
+      if (!seenChapters.has(num)) {
+        seenChapters.add(num)
+        chapters.push(ch)
+      }
+    } else {
+      chapters.push(ch)
+    }
+  })
 
   // Find the absolute earliest chapter (lowest chapter number, e.g. Chapter 1) to start reading
   const earliestChapter = chapters.length > 0

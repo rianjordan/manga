@@ -40,9 +40,10 @@ export const mangaService = {
       includes: ['cover_art', 'author', 'artist', 'tag'],
     }),
 
-  getFeed: (id: string, params: { limit?: number; offset?: number; translatedLanguage?: string[]; order?: Record<string, string> }) => {
+  getFeed: async (id: string, params: { limit?: number; offset?: number; translatedLanguage?: string[]; order?: Record<string, string> }) => {
+    const limit = params.limit ?? 100
     const query: Record<string, unknown> = {
-      limit: params.limit ?? 100,
+      limit,
       offset: params.offset ?? 0,
       includes: ['scanlation_group', 'user'],
       order: params.order ?? { volume: 'desc', chapter: 'desc' },
@@ -50,7 +51,37 @@ export const mangaService = {
     if (params.translatedLanguage) {
       query['translatedLanguage[]'] = params.translatedLanguage
     }
-    return api.get<ChapterListResponse>(`/manga/${id}/feed`, query)
+    
+    const res = await api.get<ChapterListResponse>(`/manga/${id}/feed`, query)
+    if (!res || !res.data) return res
+
+    let allData = [...res.data]
+    let currentOffset = (params.offset ?? 0) + limit
+    const total = res.total ?? 0
+
+    // Auto-fetch remaining pages in chunks of 500 if the frontend requests a full feed (limit === 500)
+    if (params.limit === 500) {
+      while (allData.length < total && currentOffset < total && allData.length < 2500) {
+        const nextQuery = { ...query, offset: currentOffset }
+        try {
+          const nextPage = await api.get<ChapterListResponse>(`/manga/${id}/feed`, nextQuery)
+          if (nextPage && nextPage.data && nextPage.data.length > 0) {
+            allData = [...allData, ...nextPage.data]
+            currentOffset += nextPage.data.length
+          } else {
+            break
+          }
+        } catch (err) {
+          console.error("Failed to fetch next feed page:", err)
+          break
+        }
+      }
+    }
+
+    return {
+      ...res,
+      data: allData,
+    }
   },
 
   getCover: (id: string) =>
