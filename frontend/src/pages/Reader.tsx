@@ -203,6 +203,7 @@ export function ReaderPage() {
         isDownloading={isDownloading}
         prevChapter={prevChapter}
         nextChapter={nextChapter}
+        volume={chapterData?.data?.attributes?.volume}
       />
     )
   }
@@ -210,7 +211,7 @@ export function ReaderPage() {
   return (
     <div className="fixed inset-0 bg-black z-50 flex flex-col">
       {/* Top bar */}
-      <div className="absolute top-0 left-0 right-0 z-10 bg-gradient-to-b from-black/90 via-black/60 to-transparent p-4 flex items-center justify-between opacity-0 hover:opacity-100 focus-within:opacity-100 transition-opacity duration-300">
+      <div className="absolute top-0 left-0 right-0 z-10 bg-darker/90 backdrop-blur-md border-b border-gray-800/60 p-4 flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Link
             to={`/manga/${mangaId}`}
@@ -226,29 +227,6 @@ export function ReaderPage() {
         </div>
 
         <div className="flex items-center gap-3">
-          {/* Chapter Navigation inside Single-page */}
-          {prevChapter && (
-            <Link
-              to={`/reader/${prevChapter.id}`}
-              className="text-white hover:text-accent bg-white/10 hover:bg-white/20 p-2.5 rounded-xl transition-all cursor-pointer flex items-center justify-center"
-              title="Previous Chapter"
-            >
-              <i className="fa-solid fa-backward-step text-xs" />
-            </Link>
-          )}
-
-          {nextChapter && (
-            <Link
-              to={`/reader/${nextChapter.id}`}
-              className="text-white hover:text-accent bg-white/10 hover:bg-white/20 p-2.5 rounded-xl transition-all cursor-pointer flex items-center justify-center"
-              title="Next Chapter"
-            >
-              <i className="fa-solid fa-forward-step text-xs" />
-            </Link>
-          )}
-
-          <div className="h-4 w-px bg-white/20 mx-1" />
-
           <button
             onClick={downloadChapter}
             disabled={isDownloading}
@@ -262,9 +240,6 @@ export function ReaderPage() {
             )}
             {isDownloading ? 'DOWNLOADING...' : 'DOWNLOAD'}
           </button>
-          <span className="text-white text-xs font-black bg-white/10 px-3 py-2 rounded-xl">
-            {currentPage + 1} / {imageList.length}
-          </span>
           <button
             onClick={toggleFullscreen}
             className="text-white hover:text-accent transition-colors p-2 rounded-xl bg-white/10 hover:bg-white/20 cursor-pointer"
@@ -272,6 +247,17 @@ export function ReaderPage() {
             <i className="fa-solid fa-expand text-xs" />
           </button>
         </div>
+      </div>
+
+      {/* Floating Volume / Chapter info header above the image */}
+      <div className="absolute top-20 left-1/2 -translate-x-1/2 z-10 bg-black/75 backdrop-blur-md px-5 py-2 rounded-full border border-white/10 text-center flex items-center gap-2.5 shadow-lg">
+        <span className="text-[11px] font-black text-accent uppercase tracking-wider">
+          {chapterData?.data?.attributes?.volume ? `Volume ${chapterData.data.attributes.volume}` : 'No Volume'}
+        </span>
+        <div className="w-1 h-1.5 bg-white/30 rounded-full" />
+        <span className="text-[11px] font-black text-white uppercase tracking-wider">
+          Chapter {chapterNum ?? '0'} {chapterTitle ? `— ${chapterTitle}` : ''}
+        </span>
       </div>
 
       {/* Image container */}
@@ -290,7 +276,7 @@ export function ReaderPage() {
           <img
             src={imageUrl(`${qualityPath}/${hash}/${imageList[currentPage]}`)}
             alt={`Page ${currentPage + 1}`}
-            className="max-h-full max-w-full object-contain select-none"
+            className="max-h-full max-w-full object-contain select-none mt-10"
             draggable={false}
           />
         ) : (
@@ -307,6 +293,67 @@ export function ReaderPage() {
           <div className="absolute right-6 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 w-12 h-12 rounded-full bg-black/40 border border-white/5 flex items-center justify-center text-white/60">
             <i className="fa-solid fa-chevron-right text-lg" />
           </div>
+        )}
+      </div>
+
+      {/* Bottom floating nav bar for chapter and page navigation */}
+      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10 bg-black/75 backdrop-blur-md px-5 py-2.5 rounded-2xl border border-white/10 flex items-center gap-6 shadow-2xl">
+        {prevChapter ? (
+          <Link
+            to={`/reader/${prevChapter.id}`}
+            className="text-white hover:text-accent transition-colors flex items-center gap-1.5 text-xs font-bold cursor-pointer"
+            title="Previous Chapter"
+          >
+            <i className="fa-solid fa-angles-left" />
+            <span>Prev Ch</span>
+          </Link>
+        ) : (
+          <span className="text-white/20 text-xs font-bold flex items-center gap-1.5 cursor-not-allowed">
+            <i className="fa-solid fa-angles-left" />
+            <span>Prev Ch</span>
+          </span>
+        )}
+
+        <div className="h-4 w-px bg-white/20" />
+
+        <div className="flex items-center gap-2">
+          <button
+            onClick={goPrev}
+            disabled={currentPage === 0}
+            className="text-white hover:text-accent disabled:opacity-20 transition-colors p-1 cursor-pointer"
+            title="Previous Page"
+          >
+            <i className="fa-solid fa-chevron-left text-sm" />
+          </button>
+          <span className="text-white text-xs font-black tracking-wide min-w-[70px] text-center">
+            {currentPage + 1} / {imageList.length}
+          </span>
+          <button
+            onClick={goNext}
+            disabled={currentPage === imageList.length - 1}
+            className="text-white hover:text-accent disabled:opacity-20 transition-colors p-1 cursor-pointer"
+            title="Next Page"
+          >
+            <i className="fa-solid fa-chevron-right text-sm" />
+          </button>
+        </div>
+
+        <div className="h-4 w-px bg-white/20" />
+
+        {nextChapter ? (
+          <Link
+            to={`/reader/${nextChapter.id}`}
+            className="text-accent hover:text-pink-400 transition-colors flex items-center gap-1.5 text-xs font-bold cursor-pointer"
+            title="Next Chapter"
+          >
+            <span>Next Ch</span>
+            <i className="fa-solid fa-angles-right" />
+          </Link>
+        ) : (
+          <span className="text-white/20 text-xs font-bold flex items-center gap-1.5 cursor-not-allowed">
+            <span>Next Ch</span>
+            <i className="fa-solid fa-angles-right" />
+          </span>
         )}
       </div>
 
@@ -332,6 +379,7 @@ function ScrollReader({
   isDownloading,
   prevChapter,
   nextChapter,
+  volume,
 }: {
   hash: string
   imageList: string[]
@@ -344,6 +392,7 @@ function ScrollReader({
   isDownloading: boolean
   prevChapter: any
   nextChapter: any
+  volume?: string | null
 }) {
   const { imageQuality } = useSettings()
   const qualityPath = imageQuality === 'data-saver' ? 'data-saver' : 'data'
@@ -403,6 +452,18 @@ function ScrollReader({
 
       {/* Spacing for absolute header */}
       <div className="h-16" />
+
+      {/* Premium Header above scroll panels */}
+      <div className="max-w-3xl mx-auto px-4 pt-8 pb-4 text-center">
+        <span className="text-xs font-black text-accent uppercase tracking-widest block mb-1">Currently Reading</span>
+        <h1 className="text-2xl font-black text-white leading-tight uppercase tracking-tight">
+          {mangaTitle ?? 'Manga'}
+        </h1>
+        <p className="text-muted text-sm mt-1 font-bold">
+          {volume ? `Volume ${volume} ` : ''}Chapter {chapterNum ?? '0'} {chapterTitle ? `— ${chapterTitle}` : ''}
+        </p>
+        <div className="w-12 h-1 bg-accent mx-auto mt-4 rounded-full" />
+      </div>
 
       {/* Images container */}
       <div className="max-w-3xl mx-auto px-2 py-4 flex flex-col gap-3">

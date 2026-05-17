@@ -8,6 +8,7 @@ import { LibraryPage } from './pages/Library'
 import { ReaderPage } from './pages/Reader'
 import { LoginPage } from './pages/Login'
 import { SignupPage } from './pages/Signup'
+import { NotFoundPage } from './pages/NotFound'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -30,6 +31,7 @@ function App() {
             <Route path="/manga/:id" element={<MangaDetailPage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/signup" element={<SignupPage />} />
+            <Route path="*" element={<NotFoundPage />} />
           </Route>
           <Route path="/reader/:chapterId" element={<ReaderPage />} />
         </Routes>
