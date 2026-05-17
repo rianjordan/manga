@@ -10,3 +10,35 @@
 
   --font-family-sans: 'Inter', sans-serif;
 }
+
+/* ═══════════════════════════════════════════════════════════
+   LIGHT MODE REDEFINITIONS
+   ═══════════════════════════════════════════════════════════ */
+.light-mode {
+  --color-dark: #f8fafc;
+  --color-darker: #f1f5f9;
+  --color-card: #ffffff;
+  --color-surface: #e2e8f0;
+  --color-muted: #64748b;
+}
+
+.light-mode .text-white {
+  color: #0f172a !important;
+}
+
+.light-mode .text-muted {
+  color: #64748b !important;
+}
+
+.light-mode #layout-root {
+  background-image: linear-gradient(rgba(248, 250, 252, 0.82), rgba(248, 250, 252, 0.82)), url('/img/website/bg.jpg') !important;
+}
+
+/* Global scrollbar adjustments in light mode */
+.light-mode ::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+.light-mode ::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+}

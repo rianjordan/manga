@@ -2,14 +2,24 @@ import { useEffect } from 'react'
 import { Outlet, useLocation } from 'react-router-dom'
 import { Header } from './Header'
 import { Footer } from './Footer'
-import { useAuth } from '../../store'
+import { useAuth, useSettings } from '../../store'
 import { useReadingHistory, useFollows } from '../../store/user-data'
 
 export function Layout() {
   const { isLoggedIn } = useAuth()
+  const { theme } = useSettings()
   const { fetchHistory, clearHistory } = useReadingHistory()
   const { fetchFollows, clearFollows } = useFollows()
   const location = useLocation()
+
+  // Apply light/dark mode class to document
+  useEffect(() => {
+    if (theme === 'light') {
+      document.documentElement.classList.add('light-mode')
+    } else {
+      document.documentElement.classList.remove('light-mode')
+    }
+  }, [theme])
 
   useEffect(() => {
     if (isLoggedIn) {
@@ -29,9 +39,10 @@ export function Layout() {
 
   return (
     <div 
-      className="min-h-screen flex flex-col text-white font-sans antialiased overflow-x-hidden"
+      id="layout-root"
+      className="min-h-screen flex flex-col text-white font-sans antialiased overflow-x-hidden transition-colors duration-300"
       style={{
-        backgroundImage: `linear-gradient(rgba(18, 18, 18, 0.92), rgba(18, 18, 18, 0.92)), url('/bg.jpg')`,
+        backgroundImage: `linear-gradient(rgba(18, 18, 18, 0.92), rgba(18, 18, 18, 0.92)), url('/img/website/bg.jpg')`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundAttachment: 'fixed',

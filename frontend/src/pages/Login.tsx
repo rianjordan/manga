@@ -45,7 +45,7 @@ export function LoginPage() {
     <div
       className="min-h-screen w-full flex items-center justify-center relative overflow-hidden bg-cover bg-center bg-no-repeat py-12 px-4"
       style={{
-        backgroundImage: `linear-gradient(rgba(18, 18, 18, 0.92), rgba(18, 18, 18, 0.92)), url('/loginbg.jpg')`
+        backgroundImage: `linear-gradient(rgba(18, 18, 18, 0.92), rgba(18, 18, 18, 0.92)), url('/img/website/loginbg.jpg')`
       }}
     >
       {/* Back to Home Button */}
