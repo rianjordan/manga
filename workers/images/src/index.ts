@@ -28,8 +28,8 @@ export default {
       imagePath = imagePath.slice(7)
     }
 
-    // Only proxy /data/ and /covers/ paths
-    const validPrefixes = ['/data/', '/covers/']
+    // Only proxy /data/, /data-saver/, and /covers/ paths
+    const validPrefixes = ['/data/', '/data-saver/', '/covers/']
     const shouldProxy = validPrefixes.some((prefix) => imagePath.startsWith(prefix))
 
     if (!shouldProxy) {

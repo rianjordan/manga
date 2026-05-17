@@ -13,7 +13,7 @@ var src_default = {
     if (imagePath.startsWith("/images")) {
       imagePath = imagePath.slice(7);
     }
-    const validPrefixes = ["/data/", "/covers/"];
+    const validPrefixes = ["/data/", "/data-saver/", "/covers/"];
     const shouldProxy = validPrefixes.some((prefix) => imagePath.startsWith(prefix));
     if (!shouldProxy) {
       return new Response("Not Found", { status: 404 });

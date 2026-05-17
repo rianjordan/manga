@@ -87,7 +87,42 @@ export function HomePage() {
   return (
     <div className="flex flex-col gap-10">
       {/* Hero Carousel */}
-      {hero && <HeroSlide manga={hero} />}
+      {hero && (
+        <div className="relative group">
+          <HeroSlide manga={hero} />
+          
+          {/* Navigation Arrows */}
+          <button
+            onClick={() => setCurrentSlide((prev) => (prev - 1 + Math.min(featured.length, 5)) % Math.min(featured.length, 5))}
+            className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-black/60 hover:bg-accent hover:text-dark text-white border border-gray-800/40 flex items-center justify-center transition-all duration-300 opacity-0 group-hover:opacity-100 shadow-xl"
+            aria-label="Previous slide"
+          >
+            <i className="fa-solid fa-chevron-left text-lg" />
+          </button>
+          
+          <button
+            onClick={() => setCurrentSlide((prev) => (prev + 1) % Math.min(featured.length, 5))}
+            className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-black/60 hover:bg-accent hover:text-dark text-white border border-gray-800/40 flex items-center justify-center transition-all duration-300 opacity-0 group-hover:opacity-100 shadow-xl"
+            aria-label="Next slide"
+          >
+            <i className="fa-solid fa-chevron-right text-lg" />
+          </button>
+          
+          {/* Pagination Indicators */}
+          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2.5 z-10 bg-black/40 backdrop-blur-md px-4 py-2 rounded-full border border-white/5">
+            {Array.from({ length: Math.min(featured.length, 5) }).map((_, idx) => (
+              <button
+                key={idx}
+                onClick={() => setCurrentSlide(idx)}
+                className={`w-2.5 h-2.5 rounded-full transition-all duration-300 ${
+                  idx === currentSlide ? 'bg-accent w-6' : 'bg-white/40 hover:bg-white/70'
+                }`}
+                aria-label={`Go to slide ${idx + 1}`}
+              />
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Trending Grid */}
       <section className="scroll-reveal">

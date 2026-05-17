@@ -299,9 +299,6 @@ var src_default = {
     if (path.startsWith("/chapter") && !path.includes("/feed") && !path.includes("/server")) {
       cacheTtl = 300;
     }
-    if (path.startsWith("/at-home/server")) {
-      cacheTtl = 300;
-    }
     if (path.startsWith("/manga") && path.includes("/feed")) {
       cacheTtl = 30;
     }

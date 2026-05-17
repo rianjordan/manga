@@ -399,9 +399,6 @@ export default {
     if (path.startsWith('/chapter') && !path.includes('/feed') && !path.includes('/server')) {
       cacheTtl = 300 // 5 min for single chapters
     }
-    if (path.startsWith('/at-home/server')) {
-      cacheTtl = 300 // 5 min for address server allocations
-    }
     if (path.startsWith('/manga') && path.includes('/feed')) {
       cacheTtl = 30 // 30s for feeds
     }
