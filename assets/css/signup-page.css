@@ -271,23 +271,4 @@ body {
     background-attachment: fixed;
     background-repeat: no-repeat;
 }
-
-.light-mode body {
-    background-image: linear-gradient(rgba(248, 250, 252, 0.65), rgba(248, 250, 252, 0.65)), url('../img/website/loginbg.jpg');
-}
-
-
-
-
-.light-mode body {
-    background-image: linear-gradient(rgba(248, 250, 252, 0.65), rgba(248, 250, 252, 0.65)), url('../img/website/loginbg.jpg') !important;
-    background-color: transparent !important;
-}
-
-.light-mode {
-    --bg-darker: #f8fafc;
-    --bg-card: #ffffff;
-    --text-white: #0f172a;
-    --text-muted: #64748b;
-    background-color: transparent !important;
-}
+

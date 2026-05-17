@@ -296,14 +296,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const isLoggedIn = localStorage.getItem('rh_logged_in') === 'true';
         if (isLoggedIn) {
             if (headerAuthContainer) {
-                headerAuthContainer.innerHTML = `<a href="#" id="header-logout-btn" class="text-[10px] font-black text-red-400 hover:text-red-500 transition-colors duration-300 tracking-tighter">LOG OUT</a>`;
+                headerAuthContainer.innerHTML = `<a href="#" id="header-logout-btn" class="text-[11px] font-black text-red-400 hover:text-red-500 transition-colors duration-300 tracking-tighter">LOG OUT</a>`;
                 const logoutBtn = document.getElementById('header-logout-btn');
                 if (logoutBtn) {
                     logoutBtn.addEventListener('click', (e) => {
                         e.preventDefault();
                         localStorage.removeItem('rh_logged_in');
                         updateAuthState();
-                        showAlert('Logged out successfully!', 'success');
+                        window.location.reload();
                     });
                 }
             }
@@ -317,9 +317,9 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             if (headerAuthContainer) {
                 headerAuthContainer.innerHTML = `
-                    <a href="login.html" class="text-[10px] font-black text-muted hover:text-accent transition-colors duration-300 tracking-tighter">LOG IN</a>
+                    <a href="login.html" class="text-[11px] font-black text-muted hover:text-accent transition-colors duration-300 tracking-tighter">LOG IN</a>
                     <div class="h-3 w-[1px] bg-gray-800/80"></div>
-                    <a href="signup.html" class="text-[10px] font-black text-muted hover:text-accent transition-colors duration-300 tracking-tighter">SIGN UP</a>
+                    <a href="signup.html" class="text-[11px] font-black text-muted hover:text-accent transition-colors duration-300 tracking-tighter">SIGN UP</a>
                 `;
             }
             if (authText) authText.textContent = 'Login / Sign Up';
@@ -334,10 +334,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (sidebarAuthBtn) {
         sidebarAuthBtn.addEventListener('click', (e) => {
-            const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+            const isLoggedIn = localStorage.getItem('rh_logged_in') === 'true';
             if (isLoggedIn) {
                 e.preventDefault();
-                localStorage.removeItem('isLoggedIn');
+                localStorage.removeItem('rh_logged_in');
                 updateAuthState();
                 window.location.reload();
             }
@@ -367,7 +367,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     updateAuthState();
     const savedTheme = localStorage.getItem('theme');
-    if (savedTheme === 'light') updateThemeUI(true);
+    updateThemeUI(savedTheme === 'light');
     // --- 7. PAGE TRANSITIONS ---
     document.body.classList.add('loaded');
 
@@ -426,25 +426,49 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
     });
+
+    // --- 4.5 CAROUSEL AUTO-PLAY ---
+    let autoPlayInterval = setInterval(() => {
+        currentSlide = currentSlide < carouselData.length - 1 ? currentSlide + 1 : 0;
+        updateSlideUI();
+    }, 5000);
+
+    // Pause auto-play on interaction
+    const carouselContainer = document.querySelector('.carousel-inner')?.parentElement;
+    if (carouselContainer) {
+        carouselContainer.addEventListener('mouseenter', () => clearInterval(autoPlayInterval));
+        carouselContainer.addEventListener('mouseleave', () => {
+            autoPlayInterval = setInterval(() => {
+                currentSlide = currentSlide < carouselData.length - 1 ? currentSlide + 1 : 0;
+                updateSlideUI();
+            }, 5000);
+        });
+    }
+
+    // ─── 9. SCROLL REVEAL ANIMATIONS (INTERSECTION OBSERVER) ───
+    const scrollRevealElements = document.querySelectorAll('.scroll-reveal');
+
+    if (scrollRevealElements.length > 0) {
+        const revealObserverCallback = (entries, observer) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('active');
+                    // Stop observing the target element once it is revealed to optimize performance
+                    observer.unobserve(entry.target);
+                }
+            });
+        };
+
+        const revealObserverOptions = {
+            root: null, // Default viewport
+            threshold: 0.08, // Element will trigger when 8% is visible
+            rootMargin: '0px 0px -40px 0px' // Offset bottom trigger for cleaner transition flow
+        };
+
+        const revealObserver = new IntersectionObserver(revealObserverCallback, revealObserverOptions);
+
+        scrollRevealElements.forEach(element => {
+            revealObserver.observe(element);
+        });
+    }
 });
-
-
-
-
-// --- 4.5 CAROUSEL AUTO-PLAY ---
-let autoPlayInterval = setInterval(() => {
-    currentSlide = currentSlide < carouselData.length - 1 ? currentSlide + 1 : 0;
-    updateSlideUI();
-}, 5000);
-
-// Pause auto-play on interaction
-const carouselContainer = document.querySelector('.carousel-inner')?.parentElement;
-if (carouselContainer) {
-    carouselContainer.addEventListener('mouseenter', () => clearInterval(autoPlayInterval));
-    carouselContainer.addEventListener('mouseleave', () => {
-        autoPlayInterval = setInterval(() => {
-            currentSlide = currentSlide < carouselData.length - 1 ? currentSlide + 1 : 0;
-            updateSlideUI();
-        }, 5000);
-    });
-}

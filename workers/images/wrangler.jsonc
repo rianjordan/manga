@@ -1,0 +1,11 @@
+{
+  "name": "readers-haven-images",
+  "main": "src/index.ts",
+  "compatibility_date": "2025-01-01",
+  "routes": [
+    { "pattern": "cdn.readershaven.com/*", "zone_id": "" }
+  ],
+  "vars": {
+    "MANGADEX_UPLOADS_BASE": "https://uploads.mangadex.org"
+  }
+}

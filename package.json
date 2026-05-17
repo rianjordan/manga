@@ -1,0 +1,13 @@
+{
+  "name": "readers-haven",
+  "private": true,
+  "scripts": {
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev:api": "cd workers/api && npx wrangler dev --port 8787",
+    "dev:images": "cd workers/images && npx wrangler dev --port 8788",
+    "build:frontend": "cd frontend && npm run build",
+    "deploy:frontend": "cd frontend && npm run build && npx wrangler pages deploy dist/",
+    "deploy:api": "cd workers/api && npx wrangler deploy",
+    "deploy:images": "cd workers/images && npx wrangler deploy"
+  }
+}

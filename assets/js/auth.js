@@ -268,6 +268,9 @@ document.addEventListener('DOMContentLoaded', () => {
                         showAlert('No account found with this email.');
                         return;
                     }
+                } else {
+                    showAlert('No account found. Please sign up first.');
+                    return;
                 }
 
                 // Process sending code

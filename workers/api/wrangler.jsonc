@@ -1,0 +1,20 @@
+{
+  "name": "readers-haven-api",
+  "main": "src/index.ts",
+  "compatibility_date": "2025-01-01",
+  "routes": [
+    { "pattern": "api.readershaven.com/*", "zone_id": "" }
+  ],
+  "vars": {
+    "MANGADEX_API_BASE": "https://api.mangadex.org",
+    "RATE_LIMIT": "5",
+    "RATE_LIMIT_WINDOW": "1000"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "readers-haven-db",
+      "database_id": "41558909-40d7-4b2a-b741-73df5c918122"
+    }
+  ]
+}
