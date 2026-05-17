@@ -7,23 +7,40 @@ import { coverUrl } from '../services/manga'
 
 export function HomePage() {
   const [currentSlide, setCurrentSlide] = useState(0)
+  const [activeTab, setActiveTab] = useState<'latest' | 'popular' | 'completed'>('latest')
+  const [page, setPage] = useState(1)
+  const limit = 20
 
+  // Featured carousel manga
   const { data: latestData, isLoading: latestLoading, isError: latestError } = useMangaSearch({
     limit: 5,
-    order: { updatedAt: 'desc' },
-    hasAvailableChapters: true,
-    contentRating: ['safe', 'suggestive'],
-  })
-
-  const { data: trendingData, isLoading: trendingLoading, isError: trendingError } = useMangaSearch({
-    limit: 25,
     order: { followedCount: 'desc' },
     hasAvailableChapters: true,
     contentRating: ['safe', 'suggestive'],
   })
 
+  // Dynamic search params for the updates grid
+  const searchParams: any = {
+    limit,
+    offset: (page - 1) * limit,
+    hasAvailableChapters: true,
+    contentRating: ['safe', 'suggestive'],
+  }
+
+  if (activeTab === 'latest') {
+    searchParams.order = { updatedAt: 'desc' }
+  } else if (activeTab === 'popular') {
+    searchParams.order = { followedCount: 'desc' }
+  } else if (activeTab === 'completed') {
+    searchParams.order = { followedCount: 'desc' }
+    searchParams.status = ['completed']
+  }
+
+  const { data: trendingData, isLoading: trendingLoading, isError: trendingError } = useMangaSearch(searchParams)
+
   const featured = latestData?.data ?? []
   const trending = trendingData?.data ?? []
+  const totalPages = trendingData ? Math.ceil(trendingData.total / limit) : 0
 
   useEffect(() => {
     if (featured.length === 0) return
@@ -94,7 +111,7 @@ export function HomePage() {
           {/* Navigation Arrows */}
           <button
             onClick={() => setCurrentSlide((prev) => (prev - 1 + Math.min(featured.length, 5)) % Math.min(featured.length, 5))}
-            className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-black/60 hover:bg-accent hover:text-dark text-white border border-gray-800/40 flex items-center justify-center transition-all duration-300 opacity-0 group-hover:opacity-100 shadow-xl"
+            className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-black/60 hover:bg-accent hover:text-dark text-white border border-gray-800/40 flex items-center justify-center transition-all duration-300 opacity-0 group-hover:opacity-100 shadow-xl cursor-pointer"
             aria-label="Previous slide"
           >
             <i className="fa-solid fa-chevron-left text-lg" />
@@ -102,7 +119,7 @@ export function HomePage() {
           
           <button
             onClick={() => setCurrentSlide((prev) => (prev + 1) % Math.min(featured.length, 5))}
-            className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-black/60 hover:bg-accent hover:text-dark text-white border border-gray-800/40 flex items-center justify-center transition-all duration-300 opacity-0 group-hover:opacity-100 shadow-xl"
+            className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-black/60 hover:bg-accent hover:text-dark text-white border border-gray-800/40 flex items-center justify-center transition-all duration-300 opacity-0 group-hover:opacity-100 shadow-xl cursor-pointer"
             aria-label="Next slide"
           >
             <i className="fa-solid fa-chevron-right text-lg" />
@@ -114,7 +131,7 @@ export function HomePage() {
               <button
                 key={idx}
                 onClick={() => setCurrentSlide(idx)}
-                className={`w-2.5 h-2.5 rounded-full transition-all duration-300 ${
+                className={`w-2.5 h-2.5 rounded-full transition-all duration-300 cursor-pointer ${
                   idx === currentSlide ? 'bg-accent w-6' : 'bg-white/40 hover:bg-white/70'
                 }`}
                 aria-label={`Go to slide ${idx + 1}`}
@@ -124,18 +141,117 @@ export function HomePage() {
         </div>
       )}
 
-      {/* Trending Grid */}
-      <section className="scroll-reveal">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-2 h-8 bg-accent rounded-full" />
-          <h2 className="text-2xl font-black text-white uppercase tracking-tight">Trending</h2>
+      {/* Trending Updates Grid */}
+      <section className="scroll-reveal flex flex-col gap-8">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 border-b border-gray-800/40 pb-6">
+          <div className="flex items-center gap-3">
+            <div className="w-2 h-8 bg-accent rounded-full" />
+            <h2 className="text-2xl font-black text-white uppercase tracking-tight">Trending Updates</h2>
+          </div>
+          
+          {/* Filter Tabs */}
+          <div className="flex flex-wrap gap-2.5">
+            <button
+              onClick={() => {
+                setActiveTab('latest')
+                setPage(1)
+              }}
+              className={`px-6 py-2.5 rounded-full text-[12px] font-black tracking-wider transition-all duration-300 cursor-pointer ${
+                activeTab === 'latest'
+                  ? 'bg-accent text-dark shadow-lg shadow-accent/20'
+                  : 'bg-card text-muted hover:text-accent border border-gray-700/50'
+              }`}
+            >
+              LATEST RELEASES
+            </button>
+            <button
+              onClick={() => {
+                setActiveTab('popular')
+                setPage(1)
+              }}
+              className={`px-6 py-2.5 rounded-full text-[12px] font-black tracking-wider transition-all duration-300 cursor-pointer ${
+                activeTab === 'popular'
+                  ? 'bg-accent text-dark shadow-lg shadow-accent/20'
+                  : 'bg-card text-muted hover:text-accent border border-gray-700/50'
+              }`}
+            >
+              TOP POPULAR
+            </button>
+            <button
+              onClick={() => {
+                setActiveTab('completed')
+                setPage(1)
+              }}
+              className={`px-6 py-2.5 rounded-full text-[12px] font-black tracking-wider transition-all duration-300 cursor-pointer ${
+                activeTab === 'completed'
+                  ? 'bg-accent text-dark shadow-lg shadow-accent/20'
+                  : 'bg-card text-muted hover:text-accent border border-gray-700/50'
+              }`}
+            >
+              COMPLETED
+            </button>
+          </div>
         </div>
 
+        {/* 5x4 Manga Grid */}
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
           {trending.map((manga: Manga, i: number) => (
             <MangaCard key={manga.id} manga={manga} index={i} />
           ))}
         </div>
+
+        {/* Dynamic bottom pagination */}
+        {totalPages > 1 && (
+          <div className="flex justify-end items-center mt-6 mb-8 gap-4">
+            <div className="flex items-center gap-2 pr-4 border-r border-gray-800/60 mr-2">
+              <span className="text-muted text-xs font-bold uppercase tracking-widest">Page</span>
+              <span className="text-white font-black text-sm">
+                {String(page).padStart(2, '0')}{' '}
+                <span className="text-muted/40 mx-1">/</span>{' '}
+                {String(Math.min(totalPages, 10)).padStart(2, '0')}
+              </span>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page === 1}
+                className="group w-12 h-12 rounded-2xl bg-card border border-gray-800/60 text-muted hover:text-accent hover:border-accent/50 transition-all duration-300 flex items-center justify-center shadow-xl hover:shadow-accent/5 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                aria-label="Previous page"
+              >
+                <i className="fa-solid fa-arrow-left text-sm transition-transform group-hover:-translate-x-1" />
+              </button>
+
+              <div className="hidden sm:flex gap-2">
+                {Array.from({ length: Math.min(totalPages, 5) }).map((_, idx) => {
+                  const pNum = idx + 1
+                  return (
+                    <button
+                      key={pNum}
+                      onClick={() => setPage(pNum)}
+                      className={`w-12 h-12 rounded-2xl font-black text-sm transition-all cursor-pointer ${
+                        page === pNum
+                          ? 'bg-accent text-dark shadow-lg shadow-accent/20'
+                          : 'bg-card border border-gray-800/40 text-muted hover:text-white hover:bg-gray-800'
+                      }`}
+                    >
+                      {pNum}
+                    </button>
+                  )
+                })}
+              </div>
+
+              <button
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                disabled={page === totalPages}
+                className="group w-12 h-12 rounded-2xl bg-card border border-gray-800/60 text-muted hover:text-accent hover:border-accent/50 transition-all duration-300 flex items-center justify-center shadow-xl hover:shadow-accent/5 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                aria-label="Next page"
+              >
+                <i className="fa-solid fa-arrow-right text-sm transition-transform group-hover:translate-x-1" />
+              </button>
+            </div>
+          </div>
+        )}
       </section>
 
       {/* Disclaimer */}

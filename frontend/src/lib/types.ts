@@ -82,6 +82,7 @@ export interface ChapterListResponse {
 }
 
 export interface SearchParams {
+  ids?: string[]
   title?: string
   limit?: number
   offset?: number

@@ -20,6 +20,7 @@ export const mangaService = {
       includes: ['cover_art', 'author', 'artist'],
     }
 
+    if (params.ids) query['ids[]'] = params.ids
     if (params.title) query.title = params.title
     if (params.status) query.status = params.status
     if (params.includedTags) query['includedTags[]'] = params.includedTags

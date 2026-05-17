@@ -16,6 +16,7 @@ export function ReaderPage() {
   const [currentPage, setCurrentPage] = useState(0)
   const [loadedPages, setLoadedPages] = useState<Set<number>>(new Set([0, 1, 2]))
   const [isFullscreen, setIsFullscreen] = useState(false)
+  const [isDownloading, setIsDownloading] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
 
   const pages = pagesData?.chapter
@@ -116,6 +117,33 @@ export function ReaderPage() {
     }
   }
 
+  // Chapter Image Downloader
+  const downloadChapter = async () => {
+    if (isDownloading || imageList.length === 0) return
+    setIsDownloading(true)
+    try {
+      const sanitizedTitle = (mangaTitle ?? 'manga').replace(/[^a-zA-Z0-9]/g, '_')
+      for (let i = 0; i < imageList.length; i++) {
+        const url = imageUrl(`${qualityPath}/${hash}/${imageList[i]}`)
+        const response = await fetch(url)
+        const blob = await response.blob()
+        const blobUrl = window.URL.createObjectURL(blob)
+        const link = document.createElement('a')
+        link.href = blobUrl
+        link.download = `${sanitizedTitle}_ch${chapterNum ?? '0'}_page-${String(i + 1).padStart(3, '0')}.jpg`
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        window.URL.revokeObjectURL(blobUrl)
+        await new Promise((r) => setTimeout(r, 200)) // 200ms delay to keep download queue orderly
+      }
+    } catch (e) {
+      console.error('Failed to download images:', e)
+    } finally {
+      setIsDownloading(false)
+    }
+  }
+
   if (pagesLoading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -146,6 +174,8 @@ export function ReaderPage() {
         goPrev={goPrev}
         navigate={navigate}
         chapterId={chapterId!}
+        downloadChapter={downloadChapter}
+        isDownloading={isDownloading}
       />
     )
   }
@@ -157,7 +187,7 @@ export function ReaderPage() {
         <div className="flex items-center gap-4">
           <button
             onClick={() => navigate(-1)}
-            className="text-white hover:text-accent transition-colors"
+            className="text-white hover:text-accent transition-colors cursor-pointer"
           >
             <i className="fa-solid fa-arrow-left text-lg" />
           </button>
@@ -169,12 +199,25 @@ export function ReaderPage() {
         </div>
 
         <div className="flex items-center gap-3">
+          <button
+            onClick={downloadChapter}
+            disabled={isDownloading}
+            className="text-white hover:text-accent disabled:opacity-50 transition-colors flex items-center gap-1.5 text-xs font-bold bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg cursor-pointer"
+            title="Download Chapter Pages"
+          >
+            {isDownloading ? (
+              <div className="w-3.5 h-3.5 border-2 border-accent border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <i className="fa-solid fa-download" />
+            )}
+            {isDownloading ? 'DOWNLOADING...' : 'DOWNLOAD'}
+          </button>
           <span className="text-white text-sm">
             {currentPage + 1} / {imageList.length}
           </span>
           <button
             onClick={toggleFullscreen}
-            className="text-white hover:text-accent transition-colors"
+            className="text-white hover:text-accent transition-colors cursor-pointer"
           >
             <i className="fa-solid fa-expand" />
           </button>
@@ -233,6 +276,8 @@ function ScrollReader({
   goPrev,
   navigate,
   chapterId,
+  downloadChapter,
+  isDownloading,
 }: {
   hash: string
   imageList: string[]
@@ -242,6 +287,8 @@ function ScrollReader({
   goPrev: () => void
   navigate: (path: number) => void
   chapterId: string
+  downloadChapter: () => Promise<void>
+  isDownloading: boolean
 }) {
   const { imageQuality } = useSettings()
   const qualityPath = imageQuality === 'data-saver' ? 'data-saver' : 'data'
@@ -269,7 +316,7 @@ function ScrollReader({
         <div className="flex items-center gap-4">
           <button
             onClick={() => navigate(-1)}
-            className="text-white hover:text-accent transition-colors"
+            className="text-white hover:text-accent transition-colors cursor-pointer"
           >
             <i className="fa-solid fa-arrow-left text-lg" />
           </button>
@@ -278,6 +325,22 @@ function ScrollReader({
             {chapterNum && <span className="text-muted ml-2">Ch. {chapterNum}</span>}
             {chapterTitle && <span className="text-muted ml-2">&mdash; {chapterTitle}</span>}
           </div>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <button
+            onClick={downloadChapter}
+            disabled={isDownloading}
+            className="text-white hover:text-accent disabled:opacity-50 transition-colors flex items-center gap-1.5 text-xs font-bold bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg cursor-pointer"
+            title="Download Chapter Pages"
+          >
+            {isDownloading ? (
+              <div className="w-3.5 h-3.5 border-2 border-accent border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <i className="fa-solid fa-download" />
+            )}
+            {isDownloading ? 'DOWNLOADING...' : 'DOWNLOAD'}
+          </button>
         </div>
       </div>
 
@@ -297,7 +360,7 @@ function ScrollReader({
       <div className="max-w-3xl mx-auto px-4 pb-8 flex justify-center gap-4">
         <button
           onClick={goPrev}
-          className="bg-card hover:bg-gray-800 text-white px-6 py-3 rounded-xl text-sm font-semibold transition-all"
+          className="bg-card hover:bg-gray-800 text-white px-6 py-3 rounded-xl text-sm font-semibold transition-all cursor-pointer"
         >
           <i className="fa-solid fa-chevron-left mr-2" />
           Previous Chapter
