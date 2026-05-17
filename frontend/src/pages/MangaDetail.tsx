@@ -261,7 +261,7 @@ export function MangaDetailPage() {
 
   const grouped = filteredChapters.reduce(
     (acc: Record<string, Chapter[]>, ch: Chapter) => {
-      const vol = ch.attributes.volume ?? '0'
+      const vol = ch.attributes.volume || 'no-volume'
       if (!acc[vol]) acc[vol] = []
       acc[vol].push(ch)
       return acc;
@@ -270,8 +270,9 @@ export function MangaDetailPage() {
   )
 
   const sortedVolumes = Object.entries(grouped).sort(([a], [b]) => {
-    if (a === '0') return -1
-    if (b === '0') return 1
+    if (a === b) return 0
+    if (a === 'no-volume') return -1
+    if (b === 'no-volume') return 1
     const numA = parseFloat(a) || 0
     const numB = parseFloat(b) || 0
     return numB - numA
@@ -569,7 +570,7 @@ export function MangaDetailPage() {
 
         {sortedVolumes.map(([vol, volChapters]) => (
           <div key={vol} className="mb-4">
-            {vol !== '0' && (
+            {vol !== 'no-volume' && (
               <h3 className="text-sm font-bold text-muted uppercase tracking-wider mb-2 px-2">
                 Volume {vol}
               </h3>
