@@ -277,3 +277,31 @@
   color: #334155 !important;
   border-color: #cbd5e1 !important;
 }
+
+/* Light mode overrides for Hero Carousel Navigation Arrows and Page Arrows */
+.light-mode button[aria-label*="slide"],
+.light-mode button[aria-label*="page"],
+.light-mode button[aria-label*="Slide"] {
+  background-color: rgba(255, 255, 255, 0.85) !important;
+  border-color: #cbd5e1 !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
+}
+
+.light-mode button[aria-label*="slide"] i,
+.light-mode button[aria-label*="page"] i,
+.light-mode button[aria-label*="Slide"] i {
+  color: #0f172a !important;
+}
+
+.light-mode button[aria-label*="slide"]:hover,
+.light-mode button[aria-label*="page"]:hover,
+.light-mode button[aria-label*="Slide"]:hover {
+  background-color: #D6336C !important;
+  border-color: #D6336C !important;
+}
+
+.light-mode button[aria-label*="slide"]:hover i,
+.light-mode button[aria-label*="page"]:hover i,
+.light-mode button[aria-label*="Slide"]:hover i {
+  color: #ffffff !important;
+}
