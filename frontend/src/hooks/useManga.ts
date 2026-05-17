@@ -18,11 +18,16 @@ export function useManga(id: string) {
   })
 }
 
-export function useMangaFeed(id: string, params?: { limit?: number; offset?: number; translatedLanguage?: string[] }) {
+export function useMangaFeed(
+  id: string,
+  params?: { limit?: number; offset?: number; translatedLanguage?: string[] },
+  options?: { enabled?: boolean }
+) {
   return useQuery({
     queryKey: ['manga-feed', id, params],
     queryFn: () => mangaService.getFeed(id, params ?? {}),
     staleTime: 30_000,
+    enabled: options?.enabled,
   })
 }
 
