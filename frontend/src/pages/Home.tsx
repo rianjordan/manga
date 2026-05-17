@@ -1,19 +1,44 @@
 import { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useMangaSearch } from '../hooks/useManga'
+import { mangaService } from '../services/manga'
 import { MangaCard } from '../components/ui/MangaCard'
 import type { Manga, Tag } from '../lib/types'
 import { coverUrl } from '../services/manga'
 import { useReadingHistory } from '../store/user-data'
+import { useToast } from '../store/toast'
 
 export function HomePage() {
   const [currentSlide, setCurrentSlide] = useState(0)
   const [activeTab, setActiveTab] = useState<'latest' | 'popular' | 'completed'>('latest')
   const [page, setPage] = useState(1)
   const limit = 20
+  const navigate = useNavigate()
+  const { addToast } = useToast()
 
   const { getRecent } = useReadingHistory()
   const recentHistory = getRecent(5)
+
+  // New this week
+  const { data: newThisWeekData } = useMangaSearch({
+    limit: 10,
+    order: { createdAt: 'desc' },
+    hasAvailableChapters: true,
+    contentRating: ['safe', 'suggestive'],
+  })
+  const newThisWeek = newThisWeekData?.data ?? []
+
+  const handleRandomManga = async () => {
+    try {
+      addToast('info', 'Finding a random manga for you...')
+      const res = await mangaService.getRandom()
+      if (res?.data?.id) {
+        navigate(`/manga/${res.data.id}`)
+      }
+    } catch {
+      addToast('error', 'Failed to fetch random manga. Try again!')
+    }
+  }
 
   // Featured carousel manga
   const { data: latestData, isLoading: latestLoading, isError: latestError } = useMangaSearch({
@@ -212,6 +237,51 @@ export function HomePage() {
                     </Link>
                   </div>
                 </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Random Manga CTA */}
+      <div className="flex items-center justify-between bg-card/40 backdrop-blur-md border border-gray-800/40 rounded-2xl px-6 py-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-accent/15 flex items-center justify-center text-accent">
+            <i className="fa-solid fa-dice text-lg" />
+          </div>
+          <div>
+            <h3 className="text-sm font-bold text-white">Feeling Lucky?</h3>
+            <p className="text-xs text-muted">Discover a random manga from MangaDex</p>
+          </div>
+        </div>
+        <button
+          onClick={handleRandomManga}
+          className="bg-accent hover:bg-pink-500 text-dark font-black text-xs px-5 py-2.5 rounded-xl transition-all duration-300 hover:shadow-lg hover:shadow-accent/30 cursor-pointer tracking-wider uppercase"
+        >
+          <i className="fa-solid fa-shuffle mr-1.5" />
+          SHUFFLE
+        </button>
+      </div>
+
+      {/* New This Week */}
+      {newThisWeek.length > 0 && (
+        <section className="flex flex-col gap-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-2 h-8 bg-emerald-500 rounded-full" />
+              <h2 className="text-2xl font-black text-white uppercase tracking-tight">New This Week</h2>
+            </div>
+            <Link
+              to="/search?order=latest"
+              className="text-xs text-muted hover:text-accent font-bold uppercase tracking-wider transition-colors"
+            >
+              View All →
+            </Link>
+          </div>
+          <div className="scroll-section">
+            {newThisWeek.map((manga: Manga, i: number) => (
+              <div key={manga.id} className="w-[160px] sm:w-[180px]">
+                <MangaCard manga={manga} index={i} />
               </div>
             ))}
           </div>

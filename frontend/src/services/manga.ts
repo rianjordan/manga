@@ -57,6 +57,22 @@ export const mangaService = {
       limit: 1,
       order: { volume: 'desc' },
     }),
+
+  getRandom: () =>
+    api.get<MangaResponse>('/manga/random', {
+      includes: ['cover_art', 'author', 'artist'],
+      contentRating: ['safe', 'suggestive'],
+    }),
+
+  getTags: () =>
+    api.get<{ data: import('../lib/types').Tag[] }>('/manga/tag'),
+
+  getCovers: (mangaId: string) =>
+    api.get<{ data: CoverArt[] }>('/cover', {
+      'manga[]': [mangaId],
+      limit: 100,
+      order: { volume: 'asc' },
+    }),
 }
 
 export const chapterService = {

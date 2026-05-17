@@ -54,3 +54,28 @@ export function useCoverFile(mangaId: string) {
     staleTime: 3600_000,
   })
 }
+
+export function useRandomManga() {
+  return useQuery({
+    queryKey: ['manga-random'],
+    queryFn: () => mangaService.getRandom(),
+    enabled: false, // Only fetch on demand
+    staleTime: 0,
+  })
+}
+
+export function useTags() {
+  return useQuery({
+    queryKey: ['manga-tags'],
+    queryFn: () => mangaService.getTags(),
+    staleTime: 3600_000, // Cache for 1 hour
+  })
+}
+
+export function useMangaCovers(mangaId: string) {
+  return useQuery({
+    queryKey: ['manga-covers', mangaId],
+    queryFn: () => mangaService.getCovers(mangaId),
+    staleTime: 600_000,
+  })
+}

@@ -1,7 +1,8 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Outlet, useLocation } from 'react-router-dom'
 import { Header } from './Header'
 import { Footer } from './Footer'
+import { ToastContainer } from '../ui/ToastContainer'
 import { useAuth, useSettings } from '../../store'
 import { useReadingHistory, useFollows } from '../../store/user-data'
 
@@ -11,6 +12,7 @@ export function Layout() {
   const { fetchHistory, clearHistory } = useReadingHistory()
   const { fetchFollows, clearFollows } = useFollows()
   const location = useLocation()
+  const [showScrollTop, setShowScrollTop] = useState(false)
 
   // Apply light/dark mode class to document
   useEffect(() => {
@@ -31,10 +33,27 @@ export function Layout() {
     }
   }, [isLoggedIn])
 
+  // Scroll-to-top visibility
+  useEffect(() => {
+    const handleScroll = () => setShowScrollTop(window.scrollY > 300)
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
+
+  // Scroll to top on route change
+  useEffect(() => {
+    window.scrollTo({ top: 0 })
+  }, [location.pathname])
+
   const isAuthPage = location.pathname === '/login' || location.pathname === '/signup'
 
   if (isAuthPage) {
-    return <Outlet />
+    return (
+      <>
+        <Outlet />
+        <ToastContainer />
+      </>
+    )
   }
 
   return (
@@ -49,11 +68,27 @@ export function Layout() {
         backgroundRepeat: 'no-repeat'
       }}
     >
+      {/* Skip to main content — accessibility */}
+      <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[200] focus:bg-accent focus:text-white focus:px-4 focus:py-2 focus:rounded-lg focus:text-sm focus:font-bold">
+        Skip to main content
+      </a>
       <Header />
-      <main className="w-full max-w-[1440px] mx-auto px-4 md:px-10 py-8 flex-grow">
-        <Outlet />
+      <main id="main-content" className="w-full max-w-[1440px] mx-auto px-4 md:px-10 py-8 flex-grow page-enter">
+        <Outlet key={location.pathname} />
       </main>
       <Footer />
+      <ToastContainer />
+
+      {/* Scroll-to-Top Button */}
+      <button
+        onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+        className={`fixed bottom-8 right-8 w-12 h-12 rounded-full bg-accent text-white shadow-2xl shadow-accent/30 z-50 flex items-center justify-center transition-all duration-500 cursor-pointer hover:scale-110 active:scale-95 ${
+          showScrollTop ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10 pointer-events-none'
+        }`}
+        aria-label="Scroll to top"
+      >
+        <i className="fa-solid fa-arrow-up text-sm" />
+      </button>
     </div>
   )
 }

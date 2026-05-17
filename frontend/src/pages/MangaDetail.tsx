@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { useManga, useMangaFeed } from '../hooks/useManga'
+import { useManga, useMangaFeed, useMangaSearch } from '../hooks/useManga'
 import { coverUrl } from '../services/manga'
 import { useFollows, useReadingHistory } from '../store/user-data'
 import { useAuth } from '../store'
+import { useToast } from '../store/toast'
 import { api } from '../lib/api'
-import type { Chapter, Tag } from '../lib/types'
+import { MangaCard } from '../components/ui/MangaCard'
+import type { Chapter, Tag, Manga } from '../lib/types'
 
 const readingStatuses = [
   { id: 'reading', label: 'Reading', color: 'bg-emerald-500 text-emerald-400' },
@@ -79,17 +81,19 @@ export function MangaDetailPage() {
     loadStatsAndComments()
   }, [id])
 
+  const { addToast } = useToast()
+
   const handleRate = async (rating: number) => {
     if (!isLoggedIn) {
-      alert('Please log in to rate this manga.')
+      addToast('warning', 'Please log in to rate this manga.')
       return
     }
     try {
       await api.post(`/manga/${id}/rating`, { rating })
-      // Reload stats
+      addToast('success', `Rated ${rating} star${rating > 1 ? 's' : ''}!`)
       loadStatsAndComments()
     } catch (err: any) {
-      alert(err.message || 'Failed to submit rating.')
+      addToast('error', err.message || 'Failed to submit rating.')
     }
   }
 
@@ -107,19 +111,19 @@ export function MangaDetailPage() {
       setCommentText('')
       loadStatsAndComments() // reload comments
     } catch (err: any) {
-      alert(err.message || 'Failed to post comment.')
+      addToast('error', err.message || 'Failed to post comment.')
     } finally {
       setCommentSubmitting(false)
     }
   }
 
   const handleCommentDelete = async (commentId: number) => {
-    if (!confirm('Are you sure you want to delete this comment?')) return
     try {
       await api.delete(`/comments/${commentId}`)
       setComments(comments.filter((c) => c.id !== commentId))
+      addToast('success', 'Comment deleted.')
     } catch (err: any) {
-      alert(err.message || 'Failed to delete comment.')
+      addToast('error', err.message || 'Failed to delete comment.')
     }
   }
 
@@ -138,19 +142,52 @@ export function MangaDetailPage() {
 
   if (isLoading || !mangaRes) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <div className="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin" />
+      <div className="flex flex-col gap-8 page-enter">
+        <div className="grid grid-cols-1 md:grid-cols-[300px_1fr] gap-8">
+          <div className="skeleton aspect-[2/3] w-full" />
+          <div className="flex flex-col gap-4">
+            <div className="skeleton h-10 w-3/4" />
+            <div className="skeleton h-6 w-48" />
+            <div className="skeleton h-20 w-full" />
+            <div className="flex gap-2">
+              {Array.from({ length: 5 }).map((_, i) => <div key={i} className="skeleton h-7 w-20" />)}
+            </div>
+            <div className="flex gap-3 mt-2">
+              <div className="skeleton h-12 w-40" />
+              <div className="skeleton h-12 w-36" />
+            </div>
+          </div>
+        </div>
+        <div className="flex flex-col gap-3">
+          {Array.from({ length: 6 }).map((_, i) => <div key={i} className="skeleton h-14 w-full" />)}
+        </div>
       </div>
     )
   }
 
   const manga = mangaRes.data
   const title = manga.attributes.title.en ?? Object.values(manga.attributes.title)[0] ?? 'Untitled'
+  const altTitles = manga.attributes.altTitles?.map((t) => Object.values(t)[0]).filter(Boolean).slice(0, 3) ?? []
   const desc = manga.attributes.description.en ?? 'No description available.'
   const status = manga.attributes.status ?? 'unknown'
   const coverRel = manga.relationships.find((r: { type: string }) => r.type === 'cover_art')
   const coverFile = coverRel?.attributes?.fileName as string | undefined
   const tags = manga.attributes.tags ?? []
+  const authorRel = manga.relationships.find((r: { type: string }) => r.type === 'author')
+  const artistRel = manga.relationships.find((r: { type: string }) => r.type === 'artist')
+  const authorName = (authorRel?.attributes as any)?.name ?? null
+  const artistName = (artistRel?.attributes as any)?.name ?? null
+
+  // Related manga by shared tags
+  const topTagIds = tags.slice(0, 3).map((t: Tag) => t.id)
+  const { data: relatedData } = useMangaSearch({
+    includedTags: topTagIds.length > 0 ? topTagIds : undefined,
+    limit: 10,
+    hasAvailableChapters: true,
+    contentRating: ['safe', 'suggestive'],
+    order: { followedCount: 'desc' },
+  })
+  const relatedManga = (relatedData?.data ?? []).filter((m: Manga) => m.id !== id).slice(0, 6)
   
   const allChapters = feedData?.data ?? []
   const availableLanguages = Array.from(
@@ -252,12 +289,29 @@ export function MangaDetailPage() {
             <h1 className="text-4xl font-black text-white uppercase tracking-tight mb-3">
               {title}
             </h1>
-            <div className="flex items-center gap-3 mb-4">
+            {altTitles.length > 0 && (
+              <p className="text-xs text-muted/70 mb-2 italic truncate">
+                {altTitles.join(' · ')}
+              </p>
+            )}
+            <div className="flex flex-wrap items-center gap-3 mb-4">
               <span className="bg-accent/15 text-accent px-3 py-1 rounded-md text-xs font-black uppercase tracking-widest">
                 {status.replace('_', ' ')}
               </span>
               {manga.attributes.year && (
                 <span className="text-muted text-sm">{manga.attributes.year}</span>
+              )}
+              {authorName && (
+                <span className="text-muted text-sm flex items-center gap-1">
+                  <i className="fa-solid fa-pen-nib text-[10px]" />
+                  <span className="text-white/80 font-semibold">{authorName}</span>
+                </span>
+              )}
+              {artistName && artistName !== authorName && (
+                <span className="text-muted text-sm flex items-center gap-1">
+                  <i className="fa-solid fa-palette text-[10px]" />
+                  <span className="text-white/80 font-semibold">{artistName}</span>
+                </span>
               )}
             </div>
 
@@ -521,6 +575,25 @@ export function MangaDetailPage() {
           </div>
         ))}
       </section>
+
+      {/* Related Manga — You May Also Like */}
+      {relatedManga.length > 0 && (
+        <section className="border-t border-gray-800/60 pt-8 mt-6">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-2 h-8 bg-sky-500 rounded-full" />
+            <h2 className="text-2xl font-black text-white uppercase tracking-tight">
+              You May Also Like
+            </h2>
+          </div>
+          <div className="scroll-section">
+            {relatedManga.map((m: Manga, i: number) => (
+              <div key={m.id} className="w-[160px] sm:w-[180px]">
+                <MangaCard manga={m} index={i} />
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* ═══════════════════════════════════════════════════ */}
       {/* MANGA LEVEL COMMENTS FEED                          */}

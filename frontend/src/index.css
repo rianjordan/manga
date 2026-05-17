@@ -327,3 +327,143 @@
 .light-mode button[aria-label*="Slide"]:hover i {
   color: #ffffff !important;
 }
+
+/* ═══════════════════════════════════════════════════════════
+   PAGE TRANSITIONS & ENTRANCE ANIMATIONS
+   ═══════════════════════════════════════════════════════════ */
+.page-enter {
+  animation: pageEnter 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes pageEnter {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   CARD STAGGER REVEAL ANIMATION
+   ═══════════════════════════════════════════════════════════ */
+.card-reveal {
+  opacity: 0;
+  animation: cardReveal 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes cardReveal {
+  from { opacity: 0; transform: translateY(18px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   TOAST NOTIFICATION ANIMATIONS
+   ═══════════════════════════════════════════════════════════ */
+@keyframes toastSlideIn {
+  from { transform: translateX(120%); opacity: 0; }
+  to   { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes toastSlideOut {
+  from { transform: translateX(0); opacity: 1; }
+  to   { transform: translateX(120%); opacity: 0; }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   SKELETON LOADING PULSE
+   ═══════════════════════════════════════════════════════════ */
+.skeleton {
+  background: linear-gradient(90deg, #2a2a2a 25%, #353535 50%, #2a2a2a 75%);
+  background-size: 200% 100%;
+  animation: skeletonShimmer 1.5s ease-in-out infinite;
+  border-radius: 0.75rem;
+}
+
+.light-mode .skeleton {
+  background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
+  background-size: 200% 100%;
+}
+
+@keyframes skeletonShimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   FADE IN GENERIC
+   ═══════════════════════════════════════════════════════════ */
+.animate-fade-in {
+  animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.96) translateY(6px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   HORIZONTAL SCROLL SECTION
+   ═══════════════════════════════════════════════════════════ */
+.scroll-section {
+  display: flex;
+  gap: 1rem;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: thin;
+  scrollbar-color: #353535 transparent;
+  padding-bottom: 0.5rem;
+}
+
+.scroll-section::-webkit-scrollbar {
+  height: 6px;
+}
+
+.scroll-section::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scroll-section::-webkit-scrollbar-thumb {
+  background: #353535;
+  border-radius: 3px;
+}
+
+.scroll-section > * {
+  scroll-snap-align: start;
+  flex-shrink: 0;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ACCESSIBILITY: FOCUS-VISIBLE & REDUCED MOTION
+   ═══════════════════════════════════════════════════════════ */
+*:focus-visible {
+  outline: 2px solid #D6336C;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .page-enter, .card-reveal {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   PROGRESS BAR FOR CARDS
+   ═══════════════════════════════════════════════════════════ */
+.progress-bar {
+  height: 3px;
+  background: #2a2a2a;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #D6336C, #e84393);
+  border-radius: 2px;
+  transition: width 0.4s ease;
+}

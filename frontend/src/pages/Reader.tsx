@@ -4,6 +4,7 @@ import { useChapterPages, useChapter, useMangaFeed } from '../hooks/useManga'
 import { imageUrl, api } from '../lib/api'
 import { useSettings, useAuth } from '../store'
 import { useReadingHistory } from '../store/user-data'
+import { useToast } from '../store/toast'
 
 export function ReaderPage() {
   const { chapterId } = useParams<{ chapterId: string }>()
@@ -75,19 +76,19 @@ export function ReaderPage() {
       setSidebarCommentText('')
       loadSidebarComments()
     } catch (err: any) {
-      alert(err.message || 'Failed to post chapter comment.')
+      useToast.getState().addToast('error', err.message || 'Failed to post chapter comment.')
     } finally {
       setSidebarSubmitting(false)
     }
   }
 
   const handleSidebarCommentDelete = async (commentId: number) => {
-    if (!confirm('Are you sure you want to delete this comment?')) return
     try {
       await api.delete(`/comments/${commentId}`)
       setSidebarComments(sidebarComments.filter((c) => c.id !== commentId))
+      useToast.getState().addToast('success', 'Comment deleted.')
     } catch (err: any) {
-      alert(err.message || 'Failed to delete comment.')
+      useToast.getState().addToast('error', err.message || 'Failed to delete comment.')
     }
   }
 

@@ -4,6 +4,21 @@ import { useMangaSearch } from '../hooks/useManga'
 import { MangaCard } from '../components/ui/MangaCard'
 import type { Manga } from '../lib/types'
 
+const SORT_OPTIONS = [
+  { id: 'relevance', label: 'Relevance' },
+  { id: 'latest', label: 'Latest Updated' },
+  { id: 'popular', label: 'Most Popular' },
+  { id: 'newest', label: 'Newest Added' },
+  { id: 'alpha', label: 'A – Z' },
+]
+
+const STATUS_OPTIONS = [
+  { id: 'ongoing', label: 'Ongoing' },
+  { id: 'completed', label: 'Completed' },
+  { id: 'hiatus', label: 'Hiatus' },
+  { id: 'cancelled', label: 'Cancelled' },
+]
+
 const TAGS = [
   { name: 'Action', id: '391b0423-d847-456f-aff0-8b0cfc03066b' },
   { name: 'Adventure', id: '87cc8738-d6a3-4c37-bc7e-975f8a851b6a' },
@@ -32,6 +47,8 @@ export function SearchPage() {
   const [includedTags, setIncludedTags] = useState<string[]>([])
   const [excludedTags, setExcludedTags] = useState<string[]>([])
   const [selectedDemographics, setSelectedDemographics] = useState<string[]>([])
+  const [selectedStatus, setSelectedStatus] = useState<string[]>([])
+  const [sortBy, setSortBy] = useState('relevance')
   const [page, setPage] = useState(1)
 
   const query = searchParams.get('q') ?? ''
@@ -53,12 +70,18 @@ export function SearchPage() {
     includedTags: includedTags.length > 0 ? includedTags : undefined,
     excludedTags: excludedTags.length > 0 ? excludedTags : undefined,
     publicationDemographic: selectedDemographics.length > 0 ? selectedDemographics : undefined,
+    status: selectedStatus.length > 0 ? selectedStatus : undefined,
   }
 
-  // Only use relevance sorting if a search query is actually present.
-  // Otherwise, default to popularity sorting (followedCount) to avoid MangaDex API 400 error.
-  if (query.trim()) {
+  // Apply sort order
+  if (sortBy === 'relevance' && query.trim()) {
     searchParamsObj.order = { relevance: 'desc' }
+  } else if (sortBy === 'latest') {
+    searchParamsObj.order = { updatedAt: 'desc' }
+  } else if (sortBy === 'newest') {
+    searchParamsObj.order = { createdAt: 'desc' }
+  } else if (sortBy === 'alpha') {
+    searchParamsObj.order = { title: 'asc' }
   } else {
     searchParamsObj.order = { followedCount: 'desc' }
   }
@@ -166,6 +189,54 @@ export function SearchPage() {
                 {demo.name}
               </button>
             ))}
+          </div>
+        </div>
+
+        <div className="h-px bg-gray-800/40" />
+
+        {/* Sort & Status Row */}
+        <div className="flex flex-col sm:flex-row gap-4">
+          {/* Sort Order */}
+          <div className="flex flex-col gap-2 flex-1">
+            <span className="text-xs font-black uppercase text-accent tracking-widest">
+              Sort By
+            </span>
+            <select
+              value={sortBy}
+              onChange={(e) => { setSortBy(e.target.value); setPage(1) }}
+              className="bg-card border border-gray-800/60 text-white text-xs font-bold px-4 py-2.5 rounded-xl outline-none cursor-pointer focus:border-accent transition-all"
+            >
+              {SORT_OPTIONS.map((opt) => (
+                <option key={opt.id} value={opt.id}>{opt.label}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Status Filter */}
+          <div className="flex flex-col gap-2 flex-[2]">
+            <span className="text-xs font-black uppercase text-accent tracking-widest">
+              Status
+            </span>
+            <div className="flex flex-wrap gap-2">
+              {STATUS_OPTIONS.map((st) => (
+                <button
+                  key={st.id}
+                  onClick={() => {
+                    setSelectedStatus((prev) =>
+                      prev.includes(st.id) ? prev.filter((s) => s !== st.id) : [...prev, st.id]
+                    )
+                    setPage(1)
+                  }}
+                  className={`px-3.5 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-300 cursor-pointer ${
+                    selectedStatus.includes(st.id)
+                      ? 'bg-accent text-dark font-black shadow-lg shadow-accent/20'
+                      : 'bg-card text-muted hover:text-accent border border-gray-800/60'
+                  }`}
+                >
+                  {st.label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
