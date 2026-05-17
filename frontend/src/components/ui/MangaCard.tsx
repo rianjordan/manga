@@ -7,6 +7,7 @@ import { useFollows } from '../../store/user-data'
 interface MangaCardProps {
   manga: Manga
   index?: number
+  rating?: number
 }
 
 const statusColors: Record<string, string> = {
@@ -18,7 +19,7 @@ const statusColors: Record<string, string> = {
   re_reading: 'bg-purple-500',
 }
 
-export function MangaCard({ manga, index = 0 }: MangaCardProps) {
+export function MangaCard({ manga, index = 0, rating }: MangaCardProps) {
   const title = manga.attributes.title.en ?? Object.values(manga.attributes.title)[0] ?? 'Untitled'
   const coverRel = manga.relationships.find((r) => r.type === 'cover_art')
   const coverFile = coverRel?.attributes?.fileName as string | undefined
@@ -92,11 +93,15 @@ export function MangaCard({ manga, index = 0 }: MangaCardProps) {
         </div>
         <div className="flex items-center justify-between text-muted text-xs">
           <span className="capitalize">{manga.attributes.status?.replace('_', ' ')}</span>
-          {followStatus && (
+          {rating !== undefined && rating !== null ? (
+            <span className="flex items-center gap-1 text-amber-400 font-extrabold text-xs bg-amber-500/5 px-2 py-0.5 rounded-md border border-amber-500/10">
+              <i className="fa-solid fa-star text-[10px]" /> {rating.toFixed(1)}
+            </span>
+          ) : followStatus ? (
             <span className="capitalize text-accent/70 font-bold text-[10px]">
               {followStatus.replace('_', ' ')}
             </span>
-          )}
+          ) : null}
         </div>
       </div>
     </Link>

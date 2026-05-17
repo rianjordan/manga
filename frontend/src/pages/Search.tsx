@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { useMangaSearch } from '../hooks/useManga'
+import { useMangaSearch, useMangaStatistics } from '../hooks/useManga'
 import { MangaCard } from '../components/ui/MangaCard'
 import type { Manga } from '../lib/types'
 
@@ -96,6 +96,10 @@ export function SearchPage() {
   }
 
   const { data, isLoading } = useMangaSearch(searchParamsObj)
+
+  const searchResults = data?.data ?? []
+  const searchResultIds = searchResults.map((m) => m.id)
+  const { data: statsData } = useMangaStatistics(searchResultIds, { enabled: searchResultIds.length > 0 })
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
@@ -306,7 +310,7 @@ export function SearchPage() {
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
               {data.data.map((manga: Manga, i: number) => (
-                <MangaCard key={manga.id} manga={manga} index={i} />
+                <MangaCard key={manga.id} manga={manga} index={i} rating={statsData?.[manga.id]?.rating?.average} />
               ))}
             </div>
           )}

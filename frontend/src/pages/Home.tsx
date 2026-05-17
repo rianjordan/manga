@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { useMangaSearch } from '../hooks/useManga'
+import { useMangaSearch, useMangaStatistics } from '../hooks/useManga'
 import { mangaService } from '../services/manga'
 import { MangaCard } from '../components/ui/MangaCard'
 import type { Manga, Tag } from '../lib/types'
@@ -70,6 +70,13 @@ export function HomePage() {
   const featured = latestData?.data ?? []
   const trending = trendingData?.data ?? []
   const totalPages = trendingData ? Math.ceil(trendingData.total / limit) : 0
+
+  const featuredIds = featured.map((m) => m.id)
+  const newIds = newThisWeek.map((m) => m.id)
+  const trendingIds = trending.map((m) => m.id)
+  const allIds = Array.from(new Set([...featuredIds, ...newIds, ...trendingIds]))
+  
+  const { data: statsData } = useMangaStatistics(allIds, { enabled: allIds.length > 0 })
 
   useEffect(() => {
     if (featured.length === 0) return
@@ -143,7 +150,7 @@ export function HomePage() {
                   : 'opacity-0 z-0 pointer-events-none'
               }`}
             >
-              <HeroSlide manga={manga} />
+              <HeroSlide manga={manga} rating={statsData?.[manga.id]?.rating?.average} />
             </div>
           ))}
           
@@ -281,7 +288,7 @@ export function HomePage() {
           <div className="scroll-section">
             {newThisWeek.map((manga: Manga, i: number) => (
               <div key={manga.id} className="w-[160px] sm:w-[180px]">
-                <MangaCard manga={manga} index={i} />
+                <MangaCard manga={manga} index={i} rating={statsData?.[manga.id]?.rating?.average} />
               </div>
             ))}
           </div>
@@ -356,7 +363,7 @@ export function HomePage() {
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 sm:gap-6">
             {trending.map((manga: Manga, i: number) => (
-              <MangaCard key={manga.id} manga={manga} index={i} />
+              <MangaCard key={manga.id} manga={manga} index={i} rating={statsData?.[manga.id]?.rating?.average} />
             ))}
           </div>
         )}
@@ -431,7 +438,7 @@ export function HomePage() {
   )
 }
 
-function HeroSlide({ manga }: { manga: Manga }) {
+function HeroSlide({ manga, rating }: { manga: Manga; rating?: number }) {
   const title = manga.attributes.title.en ?? Object.values(manga.attributes.title)[0] ?? 'Untitled'
   const desc = manga.attributes.description.en ?? ''
   const status = manga.attributes.status ?? 'unknown'
@@ -479,6 +486,12 @@ function HeroSlide({ manga }: { manga: Manga }) {
               <span className="bg-accent text-dark px-3 py-1 rounded-md text-[10px] sm:text-xs font-black uppercase tracking-widest shadow-lg shadow-accent/20">
                 {status.replace('_', ' ')}
               </span>
+              {rating !== undefined && rating !== null && (
+                <span className="bg-amber-500/10 border border-amber-500/30 text-amber-400 px-2.5 py-1 rounded-md text-[10px] sm:text-xs font-black tracking-widest shadow-lg flex items-center gap-1">
+                  <i className="fa-solid fa-star text-[9px] sm:text-[10px]" />
+                  {rating.toFixed(1)}
+                </span>
+              )}
               <span className="text-accent/80 font-extrabold text-[10px] sm:text-xs">
                 <i className="fa-solid fa-fire-flame-curved mr-1.5 animate-pulse" />
                 Featured

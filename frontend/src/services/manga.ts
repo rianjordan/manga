@@ -107,13 +107,23 @@ export const mangaService = {
       order: { volume: 'asc' },
     }),
 
-  // Fetch MangaDex statistics: rating (average & Bayesian), follows, etc.
-  getStatistics: async (mangaId: string): Promise<MangaStatistics | null> => {
+  // Fetch MangaDex statistics: rating (average & Bayesian), follows, etc. Supports single ID or list of IDs.
+  getStatistics: async (mangaIdOrIds: string | string[]): Promise<any | null> => {
     try {
-      const response = await api.get<{ statistics: Record<string, MangaStatistics> }>(
-        `/statistics/manga/${mangaId}`
-      )
-      return response.statistics?.[mangaId] ?? null
+      if (Array.isArray(mangaIdOrIds)) {
+        if (mangaIdOrIds.length === 0) return { statistics: {} }
+        const params = new URLSearchParams()
+        mangaIdOrIds.forEach(id => params.append('manga[]', id))
+        const response = await api.get<{ statistics: Record<string, MangaStatistics> }>(
+          `/statistics/manga?${params.toString()}`
+        )
+        return response.statistics ?? {}
+      } else {
+        const response = await api.get<{ statistics: Record<string, MangaStatistics> }>(
+          `/statistics/manga/${mangaIdOrIds}`
+        )
+        return response.statistics?.[mangaIdOrIds] ?? null
+      }
     } catch (err) {
       console.error('Failed to fetch manga statistics:', err)
       return null

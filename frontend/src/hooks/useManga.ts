@@ -80,3 +80,12 @@ export function useMangaCovers(mangaId: string) {
     staleTime: 600_000,
   })
 }
+
+export function useMangaStatistics(ids: string[], options?: { enabled?: boolean }) {
+  return useQuery({
+    queryKey: ['manga-statistics', ids],
+    queryFn: () => mangaService.getStatistics(ids),
+    staleTime: 300_000,
+    enabled: options?.enabled !== false && ids.length > 0,
+  })
+}
