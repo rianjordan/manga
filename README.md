@@ -20,26 +20,60 @@ A state-of-the-art, ad-free manga reader web application powered by the **MangaD
 
 ---
 
-## 🌟 Premium Features & UI/UX Design
+## ✨ Detailed Features & Technical Walkthrough
 
-Reader's Haven goes far beyond a simple wrapper. It is built to offer a **cinematic, fluid reading experience** with custom state-of-the-art designs tailored for both desktop and mobile viewports.
+### 🏠 1. Homepage & Discover Center
+*   **Dynamic Interactive Carousel**:
+    *   *Implementation*: A full-featured slideshow that queries featured manga cards directly from the MangaDex API. Uses Framer-motion inspired timing arrays to slide transition titles.
+    *   *Mobile Glassmorphism*: Under `768px`, the UI triggers a custom media query rendering:
+        - A full-bleed cover art backdrop with a 4px blur and a 35% brightness filter (`blur(4px) brightness(0.35)`).
+        - A premium dark-to-transparent overlay gradient.
+        - A glassmorphic content box styled with a transparent white border (`border-white/5`), high-blur backdrop filter, and deep box-shadows to ensure high text contrast and legibility.
+    *   *Direct Title & Cover Click*: Wraps the main title, cover image, and view details buttons inside `<Link>` elements pointing directly to `/manga/:id`, adding beautiful scaling transitions (`hover:scale-[1.03] duration-500`).
+*   **Dynamic Category Hub**:
+    *   *Implementation*: Employs responsive tabs allowing readers to switch between **Trending Now**, **Popular Updates**, **New Releases**, and **Recently Completed** sections.
+    *   *Query State Loading*: Features React Query cached queries that transition instantly, displaying animated pulse skeleton loaders during data hydration to prevent layout shifts (CLS).
+*   **"Recently Read History" Panel**:
+    *   *Implementation*: Dynamically lists the user's reading history.
+    *   *Mobile Horizontal Scrolling*: Automatically transforms from a traditional vertical-running grid on desktop into a premium, swipe-snapping horizontal list (`flex overflow-x-auto gap-4 pb-3.5 scroll-section`) on viewports under `768px`, dramatically reducing vertical scrolling friction.
+    *   *Cover Recovery Handling*: Employs a robust `onError` image handler that automatically replaces missing or broken cover URLs with a high-fidelity local vector placeholder.
+*   **"New This Week" Schedule**:
+    *   *Implementation*: Displays a weekly release calendar. Uses the custom active CSS class `bg-accent` (theme accent color) to highlight live columns, maintaining a clean visual identity.
 
-### 🎭 Cinematic Front-End Experience
-*   **Dynamic Hero Carousel**: Responsive hero slider utilizing full-bleed blurred cover art backgrounds, edge gradient overlays, and dynamic glassmorphism panels. Click any cover or title for immediate navigation with premium hover effects.
-*   **Swipeable Mobile Layouts**: Sections like "Recently Read History" and "New This Week" dynamically adapt from grid views (on desktop) to native horizontal swiping carousels on mobile viewports to optimize screen real estate.
-*   **Mobile-Optimized Detail Views**: Manga covers are centered (`max-w-[240px]`) and primary action buttons ("Start Reading" and "Add to List") automatically stack into full-width tap targets for perfect thumb-reachability.
-*   **Double Theme Control System**: Seamlessly switch between a slate-contrast light mode and a deep immersive dark mode, with smooth CSS transitions across all cards, panels, and form fields.
+### 📚 2. Manga Detail & Metadata Hub
+*   **Rich Meta Extraction**:
+    *   *Implementation*: Hydrates full details including description, release year, tags/genres, and relationships. It pulls and resolves author and artist names by scanning and filtering MangaDex's relationship array.
+*   **Comprehensive Statistics Panel**:
+    *   *Implementation*: Directly queries statistical aggregates from `/statistics/manga/:id`.
+    *   *Advanced Score Weighting*: Displays Bayesian ratings, overall mathematical mean scores, absolute follow counts, and rolling 6-month averages, presenting a highly informative summary for readers.
+*   **Unified Bookmark & Progress Tracker**:
+    *   *Implementation*: Integrated with Cloudflare D1 SQL database.
+    *   *Custom List Management*: Features a sleek, floating dropdown panel allowing users to instantly select and bookmark their reading state: *Reading, Plan to Read, Completed, On Hold, Dropped, or Re-reading*. Clicking off the dropdown triggers a custom background overlay to close the window gracefully.
+*   **Optimized Button Grid**:
+    *   *Implementation*: High-fidelity buttons for "Start Reading" and "Add to List" utilize CSS media queries to stack vertically (`flex-col sm:flex-row`) and expand to full width (`w-full sm:w-auto`) on mobile, maximizing thumb-reach target areas.
 
-### ⚙️ Serverless Edge Architecture
-*   **Edge Proxies & BFF**: Two separate Cloudflare Workers handle API and image requests.
-    *   `workers/api`: Acts as a Backend-For-Frontend (BFF), forwarding requests to the MangaDex API, injecting missing CORS headers, and caching endpoints at the edge.
-    *   `workers/images`: Bypasses hotlink protection by proxying image servers and caching raw image chunks for 24 hours to maximize performance.
-*   **Edge Database**: Cloudflare D1 (SQL-based serverless database) holds persistent user data including lists, follows, custom bookmarks, and history entries.
-*   **Client-Side Rate Limiter**: High-fidelity client-side rate limiting (token bucket / limiter) ensures requests never trigger standard MangaDex API limits.
+### 🖼️ 3. Fully-Immersive Manga Reader
+*   **Infinite Strip & Page Viewers**:
+    *   *Implementation*: Flexible viewport rendering engine allowing seamless switching between paginated reading (left-to-right/right-to-left) and long-strip continuous webtoon scrolling.
+*   **Robust Multi-Language Fallback Engine**:
+    *   *Implementation*: Resolves missing localized title translations inside the reading header.
+    *   *Cascade Extraction*: If standard English titles (`title.en`) are missing from the parsed API relationship mapping, the engine dynamically cascades through alternate language keys (`title.ja`, `title.ko`, etc.) and automatically falls back to `Object.values(title)[0]` to guarantee that actual titles are shown instead of generic placeholders.
+*   **Dynamic enabled React Query hooks**:
+    *   *Implementation*: Employs a custom `useManga` hook accepting conditional enabling options.
+    *   *Circular Call Defence*: Only activates the fetch protocol *after* the chapter relationships have successfully parsed and extracted the unique `mangaId`, completely eliminating redundant or failed API requests during initial page hydration.
+*   **Animated History Sidebar Drawer**:
+    *   *Implementation*: A slide-out panel accessible from the primary header.
+    *   *Edge Hydrated Covers*: The drawer renders detailed cards containing the active chapter number, reading date, and cover file. The reader page saves the exact cover filename during read-progress database synchronization, enabling cover arts to load in both the homepage shelf and the navigation sidebar.
 
-### 🛠️ Robust Content Engine
-*   **Multi-Language Fallbacks**: A localized title extraction engine that searches through multiple key structures, falling back gracefully to Japanese Romaji or first-available localizations if standard English is absent.
-*   **Intelligent History Drawer**: Reads your persistent progress state to display recently read chapters inside an animated Sidebar drawer, loaded directly with cover art assets.
+### ⚡ 4. Cloudflare Worker Edge Proxies & Backend (BFF)
+*   **BFF Gateway Worker (`workers/api`)**:
+    *   *Implementation*: A secure routing node built on Hono/Cloudflare Workers.
+    *   *CORS Bypass & Edge Caching*: Appends cross-origin allowance headers, proxies core endpoints, and caches standard catalog listings locally at edge nodes.
+    *   *Edge SQL Layer*: Leverages Cloudflare D1 SQL engine, executing lightning-fast CRUD queries to manage user progress, credentials, and bookmark records in under 20ms.
+*   **Image Routing Worker (`workers/images`)**:
+    *   *Implementation*: Dedicated serverless image proxy.
+    *   *Referer Spoofing*: Intercepts image requests and mimics expected MangaDex site referers to bypass hotlinking protection algorithms.
+    *   *Persistent Blob Cache*: Leverages standard Cache Storage API to cache full manga chapters at regional edge servers for **24 hours**, saving substantial bandwidth and speeding up subsequent image rendering.
 
 ---
 
