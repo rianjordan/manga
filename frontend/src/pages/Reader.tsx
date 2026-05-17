@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useChapterPages, useChapter, useMangaFeed } from '../hooks/useManga'
-import { imageUrl } from '../lib/api'
-import { useSettings } from '../store'
+import { imageUrl, api } from '../lib/api'
+import { useSettings, useAuth } from '../store'
 import { useReadingHistory } from '../store/user-data'
 
 export function ReaderPage() {
@@ -33,6 +33,77 @@ export function ReaderPage() {
   const chapterTitle = chapterData?.data?.attributes?.title
   const currentLang = chapterData?.data?.attributes?.translatedLanguage ?? 'en'
 
+  const { isLoggedIn, username: currentUsername } = useAuth()
+
+  // Comments states
+  const [showCommentsSidebar, setShowCommentsSidebar] = useState(false)
+  const [sidebarComments, setSidebarComments] = useState<any[]>([])
+  const [sidebarCommentText, setSidebarCommentText] = useState('')
+  const [sidebarSubmitting, setSidebarSubmitting] = useState(false)
+
+  // Fetch comments feed
+  const loadSidebarComments = async () => {
+    if (!mangaId || !chapterId) return
+    try {
+      const res = await api.get<any>('/comments', { mangaId, chapterId })
+      if (res && res.data) {
+        setSidebarComments(res.data)
+      }
+    } catch (e) {
+      console.error('Failed to load chapter sidebar comments:', e)
+    }
+  }
+
+  // Load comments when mangaId or chapterId resolves
+  useEffect(() => {
+    if (mangaId && chapterId) {
+      loadSidebarComments()
+    }
+  }, [mangaId, chapterId])
+
+  const handleSidebarCommentSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!sidebarCommentText.trim() || !mangaId || !chapterId) return
+
+    try {
+      setSidebarSubmitting(true)
+      await api.post('/comments', {
+        mangaId,
+        chapterId,
+        content: sidebarCommentText.trim()
+      })
+      setSidebarCommentText('')
+      loadSidebarComments()
+    } catch (err: any) {
+      alert(err.message || 'Failed to post chapter comment.')
+    } finally {
+      setSidebarSubmitting(false)
+    }
+  }
+
+  const handleSidebarCommentDelete = async (commentId: number) => {
+    if (!confirm('Are you sure you want to delete this comment?')) return
+    try {
+      await api.delete(`/comments/${commentId}`)
+      setSidebarComments(sidebarComments.filter((c) => c.id !== commentId))
+    } catch (err: any) {
+      alert(err.message || 'Failed to delete comment.')
+    }
+  }
+
+  // Relative Time helper
+  const formatTimeAgo = (dateStr: string) => {
+    const elapsed = Date.now() - new Date(dateStr).getTime()
+    const mins = Math.floor(elapsed / 60000)
+    const hours = Math.floor(mins / 60)
+    const days = Math.floor(hours / 24)
+
+    if (mins < 1) return 'Just now'
+    if (mins < 60) return `${mins}m ago`
+    if (hours < 24) return `${hours}h ago`
+    return `${days}d ago`
+  }
+
   // Fetch sibling chapters for next/prev navigation
   const { data: feedData } = useMangaFeed(mangaId, { limit: 500 }, { enabled: !!mangaId })
   const allChapters = feedData?.data ?? []
@@ -55,6 +126,97 @@ export function ReaderPage() {
     const chTitle = ch.attributes.title ?? ''
     return chNum.toLowerCase().includes(searchLower) || chTitle.toLowerCase().includes(searchLower)
   }).reverse()
+
+  // Render Sliding Comments Sidebar
+  const renderCommentsSidebar = () => {
+    if (!showCommentsSidebar) return null
+    return (
+      <div className="fixed inset-y-0 right-0 z-[120] w-full sm:w-[400px] bg-darker/95 backdrop-blur-md border-l border-gray-800 flex flex-col shadow-2xl animate-slide-in">
+        {/* Sidebar Header */}
+        <div className="p-5 border-b border-gray-800 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <i className="fa-solid fa-comments text-accent text-lg" />
+            <h3 className="text-lg font-black text-white">Chapter Comments</h3>
+            <span className="text-xs text-muted">({sidebarComments.length})</span>
+          </div>
+          <button
+            onClick={() => setShowCommentsSidebar(false)}
+            className="w-8 h-8 rounded-xl bg-card border border-white/5 text-muted hover:text-accent flex items-center justify-center cursor-pointer transition-colors"
+          >
+            <i className="fa-solid fa-xmark" />
+          </button>
+        </div>
+
+        {/* Sidebar Comments Feed */}
+        <div className="flex-grow overflow-y-auto p-5 flex flex-col gap-4">
+          {sidebarComments.length === 0 ? (
+            <div className="text-center py-16 text-xs text-muted font-bold uppercase tracking-wider">
+              No comments in this chapter. Start the chatter!
+            </div>
+          ) : (
+            sidebarComments.map((comment) => (
+              <div
+                key={comment.id}
+                className="bg-card/40 border border-gray-800/40 p-4 rounded-xl flex gap-3.5 items-start"
+              >
+                <img
+                  src={comment.avatarUrl || `https://api.dicebear.com/7.x/bottts/svg?seed=${comment.username}`}
+                  className="w-8 h-8 rounded-lg bg-gray-800 border border-white/5 flex-shrink-0"
+                  alt={comment.username}
+                />
+                <div className="min-w-0 flex-grow">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-black text-xs text-white truncate max-w-[120px]">{comment.username}</span>
+                    <span className="text-[9px] text-muted font-bold flex-shrink-0">{formatTimeAgo(comment.createdAt)}</span>
+                  </div>
+                  <p className="text-gray-300 text-xs font-semibold leading-relaxed mt-1 whitespace-pre-line">
+                    {comment.content}
+                  </p>
+                  {isLoggedIn && currentUsername === comment.username && (
+                    <div className="flex justify-end mt-1">
+                      <button
+                        onClick={() => handleSidebarCommentDelete(comment.id)}
+                        className="text-[10px] text-red-400 hover:text-red-500 font-bold uppercase cursor-pointer bg-transparent border-none"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* Sidebar Input Composer */}
+        <div className="p-5 border-t border-gray-800 bg-[#121212]/80">
+          {isLoggedIn ? (
+            <form onSubmit={handleSidebarCommentSubmit} className="flex gap-2">
+              <input
+                type="text"
+                value={sidebarCommentText}
+                onChange={(e) => setSidebarCommentText(e.target.value)}
+                placeholder="Write a comment..."
+                className="flex-grow bg-[#2A2A2A] border border-gray-700/50 rounded-xl py-2.5 px-3 text-xs text-white placeholder-gray-500 outline-none focus:border-accent transition-all font-semibold"
+                required
+              />
+              <button
+                type="submit"
+                disabled={sidebarSubmitting || !sidebarCommentText.trim()}
+                className="bg-accent hover:bg-accent-hover text-black text-[10px] font-black uppercase tracking-wider py-2.5 px-4 rounded-xl flex items-center justify-center transition-all cursor-pointer flex-shrink-0"
+              >
+                Post
+              </button>
+            </form>
+          ) : (
+            <div className="text-center text-[10px] font-bold text-muted uppercase tracking-wider">
+              Please <Link to="/login" className="text-accent underline font-black">log in</Link> to join the chatter.
+            </div>
+          )}
+        </div>
+      </div>
+    )
+  }
 
   const renderChapterModal = () => {
     if (!showChapterModal) return null
@@ -315,8 +477,11 @@ export function ReaderPage() {
           nextChapter={nextChapter}
           volume={chapterData?.data?.attributes?.volume}
           onShowChapters={() => setShowChapterModal(true)}
+          onShowComments={() => setShowCommentsSidebar(true)}
+          commentsCount={sidebarComments.length}
         />
         {renderChapterModal()}
+        {renderCommentsSidebar()}
       </>
     )
   }
@@ -465,6 +630,22 @@ export function ReaderPage() {
 
         <div className="h-4 w-px bg-white/20" />
 
+        <button
+          onClick={() => setShowCommentsSidebar(true)}
+          className="text-white hover:text-accent transition-colors flex items-center gap-1 text-xs font-bold cursor-pointer relative"
+          title="Open Chapter Comments Sidebar"
+        >
+          <i className="fa-solid fa-comments text-xs" />
+          <span>Comments</span>
+          {sidebarComments.length > 0 && (
+            <span className="absolute -top-2.5 -right-2 bg-accent text-[8px] text-black font-black px-1 py-0.5 rounded-full flex items-center justify-center min-w-[14px] h-[14px] scale-90">
+              {sidebarComments.length}
+            </span>
+          )}
+        </button>
+
+        <div className="h-4 w-px bg-white/20" />
+
         {nextChapter ? (
           <Link
             to={`/reader/${nextChapter.id}`}
@@ -483,6 +664,7 @@ export function ReaderPage() {
       </div>
 
       {renderChapterModal()}
+      {renderCommentsSidebar()}
 
       {/* Bottom progress bar */}
       <div className="h-1.5 bg-gray-800">
@@ -508,6 +690,8 @@ function ScrollReader({
   nextChapter,
   volume,
   onShowChapters,
+  onShowComments,
+  commentsCount,
 }: {
   hash: string
   imageList: string[]
@@ -522,6 +706,8 @@ function ScrollReader({
   nextChapter: any
   volume?: string | null
   onShowChapters: () => void
+  onShowComments: () => void
+  commentsCount: number
 }) {
   const { imageQuality } = useSettings()
   const qualityPath = imageQuality === 'data-saver' ? 'data-saver' : 'data'
@@ -575,6 +761,20 @@ function ScrollReader({
               <i className="fa-solid fa-download" />
             )}
             {isDownloading ? 'DOWNLOADING...' : 'DOWNLOAD'}
+          </button>
+
+          <button
+            onClick={onShowComments}
+            className="text-white hover:text-accent transition-colors flex items-center gap-1.5 text-xs font-bold bg-white/10 hover:bg-white/20 px-3.5 py-2 rounded-xl cursor-pointer relative"
+            title="Open Chapter Comments Sidebar"
+          >
+            <i className="fa-solid fa-comments text-xs" />
+            <span>COMMENTS</span>
+            {commentsCount > 0 && (
+              <span className="absolute -top-1.5 -right-1.5 bg-accent text-[8px] text-black font-black px-1 py-0.5 rounded-full flex items-center justify-center min-w-[14px] h-[14px] scale-90">
+                {commentsCount}
+              </span>
+            )}
           </button>
         </div>
       </div>

@@ -343,6 +343,396 @@ export default {
       }
     }
 
+    // 5. Views Count Endpoints
+    if (path.startsWith('/manga/') && path.endsWith('/views') && request.method === 'POST') {
+      try {
+        const mangaId = path.split('/')[2]
+        if (!mangaId) {
+          return new Response(JSON.stringify({ error: 'Missing manga ID' }), { status: 400, headers: CORS_HEADERS })
+        }
+
+        await env.DB.prepare(
+          `INSERT INTO manga_views (manga_id, views_count, last_viewed_at) VALUES (?, 1, datetime('now'))
+           ON CONFLICT(manga_id) DO UPDATE SET views_count = views_count + 1, last_viewed_at = datetime('now')`
+        ).bind(mangaId).run()
+
+        return new Response(JSON.stringify({ success: true }), { status: 200, headers: CORS_HEADERS })
+      } catch (err: any) {
+        return new Response(JSON.stringify({ error: err.message }), { status: 500, headers: CORS_HEADERS })
+      }
+    }
+
+    // 6. Stats and Rating Aggregate Endpoint
+    if (path.startsWith('/manga/') && path.endsWith('/stats') && request.method === 'GET') {
+      try {
+        const mangaId = path.split('/')[2]
+        if (!mangaId) {
+          return new Response(JSON.stringify({ error: 'Missing manga ID' }), { status: 400, headers: CORS_HEADERS })
+        }
+
+        // Get views
+        const viewRow = await env.DB.prepare(
+          `SELECT views_count FROM manga_views WHERE manga_id = ?`
+        ).bind(mangaId).first() as { views_count: number } | null
+        const views = viewRow?.views_count ?? 0
+
+        // Get ratings avg & count
+        const statsRow = await env.DB.prepare(
+          `SELECT AVG(rating) as avgRating, COUNT(rating) as totalRatings FROM ratings WHERE manga_id = ?`
+        ).bind(mangaId).first() as { avgRating: number | null; totalRatings: number } | null
+        const averageRating = statsRow?.avgRating ? Math.round(statsRow.avgRating * 10) / 10 : 0
+        const totalRatings = statsRow?.totalRatings ?? 0
+
+        // Get user rating if logged in
+        let userRating = 0
+        const userId = getUserId(request)
+        if (userId) {
+          const userRatingRow = await env.DB.prepare(
+            `SELECT rating FROM ratings WHERE user_id = ? AND manga_id = ?`
+          ).bind(userId, mangaId).first() as { rating: number } | null
+          userRating = userRatingRow?.rating ?? 0
+        }
+
+        return new Response(JSON.stringify({
+          mangaId,
+          views,
+          averageRating,
+          totalRatings,
+          userRating
+        }), { status: 200, headers: CORS_HEADERS })
+      } catch (err: any) {
+        return new Response(JSON.stringify({ error: err.message }), { status: 500, headers: CORS_HEADERS })
+      }
+    }
+
+    // 7. Rating Submission Endpoint
+    if (path.startsWith('/manga/') && path.endsWith('/rating') && request.method === 'POST') {
+      const userId = getUserId(request)
+      if (!userId) {
+        return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: CORS_HEADERS })
+      }
+
+      try {
+        const mangaId = path.split('/')[2]
+        const { rating } = await request.json() as { rating: number }
+        if (!mangaId || !rating || rating < 1 || rating > 5) {
+          return new Response(JSON.stringify({ error: 'Invalid mangaId or rating value' }), { status: 400, headers: CORS_HEADERS })
+        }
+
+        await env.DB.prepare(
+          `INSERT INTO ratings (user_id, manga_id, rating) VALUES (?, ?, ?)
+           ON CONFLICT(user_id, manga_id) DO UPDATE SET rating = excluded.rating, created_at = datetime('now')`
+        ).bind(userId, mangaId, rating).run()
+
+        return new Response(JSON.stringify({ success: true }), { status: 200, headers: CORS_HEADERS })
+      } catch (err: any) {
+        return new Response(JSON.stringify({ error: err.message }), { status: 500, headers: CORS_HEADERS })
+      }
+    }
+
+    // 8. Comments Endpoints (Manga and Chapter levels)
+    if (path === '/comments') {
+      if (request.method === 'GET') {
+        try {
+          const mangaId = url.searchParams.get('mangaId')
+          const chapterId = url.searchParams.get('chapterId')
+
+          if (!mangaId) {
+            return new Response(JSON.stringify({ error: 'Missing mangaId parameter' }), { status: 400, headers: CORS_HEADERS })
+          }
+
+          let query = `
+            SELECT c.id, c.content, c.created_at as createdAt, c.chapter_id as chapterId, c.user_id as userId,
+                   u.username, u.avatar_url as avatarUrl
+            FROM comments c
+            JOIN users u ON c.user_id = u.id
+            WHERE c.manga_id = ? AND `
+
+          let params: any[] = [mangaId]
+          if (chapterId) {
+            query += `c.chapter_id = ?`
+            params.push(chapterId)
+          } else {
+            query += `c.chapter_id IS NULL`
+          }
+
+          query += ` ORDER BY c.created_at DESC`
+
+          const { results } = await env.DB.prepare(query).bind(...params).all()
+          return new Response(JSON.stringify({ data: results }), { status: 200, headers: CORS_HEADERS })
+        } catch (err: any) {
+          return new Response(JSON.stringify({ error: err.message }), { status: 500, headers: CORS_HEADERS })
+        }
+      }
+
+      if (request.method === 'POST') {
+        const userId = getUserId(request)
+        if (!userId) {
+          return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: CORS_HEADERS })
+        }
+
+        try {
+          const { mangaId, chapterId, content } = await request.json() as { mangaId: string; chapterId?: string | null; content: string }
+          if (!mangaId || !content?.trim()) {
+            return new Response(JSON.stringify({ error: 'Missing required parameters' }), { status: 400, headers: CORS_HEADERS })
+          }
+
+          await env.DB.prepare(
+            `INSERT INTO comments (user_id, manga_id, chapter_id, content) VALUES (?, ?, ?, ?)`
+          ).bind(userId, mangaId, chapterId ?? null, content.trim()).run()
+
+          return new Response(JSON.stringify({ success: true }), { status: 200, headers: CORS_HEADERS })
+        } catch (err: any) {
+          return new Response(JSON.stringify({ error: err.message }), { status: 500, headers: CORS_HEADERS })
+        }
+      }
+    }
+
+    if (path.startsWith('/comments/') && request.method === 'DELETE') {
+      const userId = getUserId(request)
+      if (!userId) {
+        return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: CORS_HEADERS })
+      }
+
+      try {
+        const commentId = parseInt(path.split('/')[2], 10)
+        if (isNaN(commentId)) {
+          return new Response(JSON.stringify({ error: 'Invalid comment ID' }), { status: 400, headers: CORS_HEADERS })
+        }
+
+        // Verify ownership
+        const comment = await env.DB.prepare(
+          `SELECT user_id FROM comments WHERE id = ?`
+        ).bind(commentId).first() as { user_id: string } | null
+
+        if (!comment) {
+          return new Response(JSON.stringify({ error: 'Comment not found' }), { status: 404, headers: CORS_HEADERS })
+        }
+
+        if (comment.user_id !== userId) {
+          return new Response(JSON.stringify({ error: 'Unauthorized to delete this comment' }), { status: 403, headers: CORS_HEADERS })
+        }
+
+        await env.DB.prepare(
+          `DELETE FROM comments WHERE id = ?`
+        ).bind(commentId).run()
+
+        return new Response(JSON.stringify({ success: true }), { status: 200, headers: CORS_HEADERS })
+      } catch (err: any) {
+        return new Response(JSON.stringify({ error: err.message }), { status: 500, headers: CORS_HEADERS })
+      }
+    }
+
+    // 9. Forum Categories Endpoints
+    if (path === '/forum/categories' && request.method === 'GET') {
+      try {
+        const { results } = await env.DB.prepare(`
+          SELECT c.id, c.name, c.description,
+                 COUNT(DISTINCT t.id) as threadsCount,
+                 COUNT(DISTINCT p.id) as postsCount
+          FROM forum_categories c
+          LEFT JOIN forum_threads t ON c.id = t.category_id
+          LEFT JOIN forum_posts p ON t.id = p.thread_id
+          GROUP BY c.id
+        `).all()
+
+        return new Response(JSON.stringify({ data: results }), { status: 200, headers: CORS_HEADERS })
+      } catch (err: any) {
+        return new Response(JSON.stringify({ error: err.message }), { status: 500, headers: CORS_HEADERS })
+      }
+    }
+
+    // 10. Forum Threads Endpoints
+    if (path === '/forum/threads') {
+      if (request.method === 'GET') {
+        try {
+          const categoryId = url.searchParams.get('categoryId')
+          if (!categoryId) {
+            return new Response(JSON.stringify({ error: 'Missing categoryId parameter' }), { status: 400, headers: CORS_HEADERS })
+          }
+
+          const { results } = await env.DB.prepare(`
+            SELECT t.id, t.title, t.content, t.views_count as viewsCount, t.created_at as createdAt, t.updated_at as updatedAt,
+                   u.username, u.avatar_url as avatarUrl, t.user_id as userId,
+                   COUNT(p.id) as repliesCount
+            FROM forum_threads t
+            JOIN users u ON t.user_id = u.id
+            LEFT JOIN forum_posts p ON t.id = p.thread_id
+            WHERE t.category_id = ?
+            GROUP BY t.id
+            ORDER BY t.updated_at DESC
+          `).bind(categoryId).all()
+
+          return new Response(JSON.stringify({ data: results }), { status: 200, headers: CORS_HEADERS })
+        } catch (err: any) {
+          return new Response(JSON.stringify({ error: err.message }), { status: 500, headers: CORS_HEADERS })
+        }
+      }
+
+      if (request.method === 'POST') {
+        const userId = getUserId(request)
+        if (!userId) {
+          return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: CORS_HEADERS })
+        }
+
+        try {
+          const { categoryId, title, content } = await request.json() as { categoryId: number; title: string; content: string }
+          if (!categoryId || !title?.trim() || !content?.trim()) {
+            return new Response(JSON.stringify({ error: 'Missing required parameters' }), { status: 400, headers: CORS_HEADERS })
+          }
+
+          const result = await env.DB.prepare(
+            `INSERT INTO forum_threads (category_id, user_id, title, content) VALUES (?, ?, ?, ?)`
+          ).bind(categoryId, userId, title.trim(), content.trim()).run()
+
+          return new Response(JSON.stringify({ success: true, id: result.meta.last_row_id }), { status: 201, headers: CORS_HEADERS })
+        } catch (err: any) {
+          return new Response(JSON.stringify({ error: err.message }), { status: 500, headers: CORS_HEADERS })
+        }
+      }
+    }
+
+    if (path.startsWith('/forum/threads/')) {
+      const parts = path.split('/')
+      const threadId = parseInt(parts[3], 10)
+      if (isNaN(threadId)) {
+        return new Response(JSON.stringify({ error: 'Invalid thread ID' }), { status: 400, headers: CORS_HEADERS })
+      }
+
+      // GET /forum/threads/:id
+      if (parts.length === 4 && request.method === 'GET') {
+        try {
+          // Increment views
+          await env.DB.prepare(
+            `UPDATE forum_threads SET views_count = views_count + 1 WHERE id = ?`
+          ).bind(threadId).run()
+
+          const thread = await env.DB.prepare(`
+            SELECT t.id, t.title, t.content, t.views_count as viewsCount, t.created_at as createdAt, t.updated_at as updatedAt,
+                   u.username, u.avatar_url as avatarUrl, t.user_id as userId, c.name as categoryName
+            FROM forum_threads t
+            JOIN users u ON t.user_id = u.id
+            JOIN forum_categories c ON t.category_id = c.id
+            WHERE t.id = ?
+          `).bind(threadId).first()
+
+          if (!thread) {
+            return new Response(JSON.stringify({ error: 'Thread not found' }), { status: 404, headers: CORS_HEADERS })
+          }
+
+          return new Response(JSON.stringify({ data: thread }), { status: 200, headers: CORS_HEADERS })
+        } catch (err: any) {
+          return new Response(JSON.stringify({ error: err.message }), { status: 500, headers: CORS_HEADERS })
+        }
+      }
+
+      // DELETE /forum/threads/:id
+      if (parts.length === 4 && request.method === 'DELETE') {
+        const userId = getUserId(request)
+        if (!userId) {
+          return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: CORS_HEADERS })
+        }
+
+        try {
+          const thread = await env.DB.prepare(
+            `SELECT user_id FROM forum_threads WHERE id = ?`
+          ).bind(threadId).first() as { user_id: string } | null
+
+          if (!thread) {
+            return new Response(JSON.stringify({ error: 'Thread not found' }), { status: 404, headers: CORS_HEADERS })
+          }
+
+          if (thread.user_id !== userId) {
+            return new Response(JSON.stringify({ error: 'Unauthorized to delete this thread' }), { status: 403, headers: CORS_HEADERS })
+          }
+
+          await env.DB.prepare(`DELETE FROM forum_threads WHERE id = ?`).bind(threadId).run()
+          return new Response(JSON.stringify({ success: true }), { status: 200, headers: CORS_HEADERS })
+        } catch (err: any) {
+          return new Response(JSON.stringify({ error: err.message }), { status: 500, headers: CORS_HEADERS })
+        }
+      }
+
+      // Posts inside thread: GET /forum/threads/:id/posts and POST /forum/threads/:id/posts
+      if (parts[4] === 'posts') {
+        if (request.method === 'GET') {
+          try {
+            const { results } = await env.DB.prepare(`
+              SELECT p.id, p.content, p.created_at as createdAt,
+                     u.username, u.avatar_url as avatarUrl, p.user_id as userId
+              FROM forum_posts p
+              JOIN users u ON p.user_id = u.id
+              WHERE p.thread_id = ?
+              ORDER BY p.created_at ASC
+            `).bind(threadId).all()
+
+            return new Response(JSON.stringify({ data: results }), { status: 200, headers: CORS_HEADERS })
+          } catch (err: any) {
+            return new Response(JSON.stringify({ error: err.message }), { status: 500, headers: CORS_HEADERS })
+          }
+        }
+
+        if (request.method === 'POST') {
+          const userId = getUserId(request)
+          if (!userId) {
+            return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: CORS_HEADERS })
+          }
+
+          try {
+            const { content } = await request.json() as { content: string }
+            if (!content?.trim()) {
+              return new Response(JSON.stringify({ error: 'Content is required' }), { status: 400, headers: CORS_HEADERS })
+            }
+
+            await env.DB.prepare(
+              `INSERT INTO forum_posts (thread_id, user_id, content) VALUES (?, ?, ?)`
+            ).bind(threadId, userId, content.trim()).run()
+
+            // Update thread's updated_at
+            await env.DB.prepare(
+              `UPDATE forum_threads SET updated_at = datetime('now') WHERE id = ?`
+            ).bind(threadId).run()
+
+            return new Response(JSON.stringify({ success: true }), { status: 200, headers: CORS_HEADERS })
+          } catch (err: any) {
+            return new Response(JSON.stringify({ error: err.message }), { status: 500, headers: CORS_HEADERS })
+          }
+        }
+      }
+    }
+
+    // 11. Forum Posts Deletion: DELETE /forum/posts/:id
+    if (path.startsWith('/forum/posts/') && request.method === 'DELETE') {
+      const userId = getUserId(request)
+      if (!userId) {
+        return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: CORS_HEADERS })
+      }
+
+      try {
+        const postId = parseInt(path.split('/')[3], 10)
+        if (isNaN(postId)) {
+          return new Response(JSON.stringify({ error: 'Invalid post ID' }), { status: 400, headers: CORS_HEADERS })
+        }
+
+        const post = await env.DB.prepare(
+          `SELECT user_id FROM forum_posts WHERE id = ?`
+        ).bind(postId).first() as { user_id: string } | null
+
+        if (!post) {
+          return new Response(JSON.stringify({ error: 'Post not found' }), { status: 404, headers: CORS_HEADERS })
+        }
+
+        if (post.user_id !== userId) {
+          return new Response(JSON.stringify({ error: 'Unauthorized to delete this reply' }), { status: 403, headers: CORS_HEADERS })
+        }
+
+        await env.DB.prepare(`DELETE FROM forum_posts WHERE id = ?`).bind(postId).run()
+        return new Response(JSON.stringify({ success: true }), { status: 200, headers: CORS_HEADERS })
+      } catch (err: any) {
+        return new Response(JSON.stringify({ error: err.message }), { status: 500, headers: CORS_HEADERS })
+      }
+    }
+
     // ----------------------------------------------------
     // FALLBACK / PROXY ROUTE: Forward requests to MangaDex
     // ----------------------------------------------------

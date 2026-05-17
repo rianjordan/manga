@@ -1,8 +1,10 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { useManga, useMangaFeed } from '../hooks/useManga'
 import { coverUrl } from '../services/manga'
 import { useFollows, useReadingHistory } from '../store/user-data'
+import { useAuth } from '../store'
+import { api } from '../lib/api'
 import type { Chapter, Tag } from '../lib/types'
 
 const readingStatuses = [
@@ -27,6 +29,112 @@ export function MangaDetailPage() {
 
   const { follow, unfollow, getStatus } = useFollows()
   const { addEntry, history } = useReadingHistory()
+  const { isLoggedIn, username: currentUsername } = useAuth()
+
+  // Stats & Rating state
+  const [stats, setStats] = useState({
+    views: 0,
+    averageRating: 0,
+    totalRatings: 0,
+    userRating: 0
+  })
+  const [hoverRating, setHoverRating] = useState(0)
+
+  // Comments state
+  const [comments, setComments] = useState<any[]>([])
+  const [commentText, setCommentText] = useState('')
+  const [commentSubmitting, setCommentSubmitting] = useState(false)
+
+  // Load Stats, views & comments
+  const loadStatsAndComments = async () => {
+    if (!id) return
+    try {
+      // Fetch stats
+      const statsRes = await api.get<any>(`/manga/${id}/stats`)
+      if (statsRes) {
+        setStats({
+          views: statsRes.views ?? 0,
+          averageRating: statsRes.averageRating ?? 0,
+          totalRatings: statsRes.totalRatings ?? 0,
+          userRating: statsRes.userRating ?? 0
+        })
+      }
+
+      // Fetch comments
+      const commentsRes = await api.get<any>(`/comments`, { mangaId: id })
+      if (commentsRes && commentsRes.data) {
+        setComments(commentsRes.data)
+      }
+    } catch (e) {
+      console.error('Failed to load manga stats or comments:', e)
+    }
+  }
+
+  useEffect(() => {
+    if (!id) return
+    
+    // Increment view count once on page visit
+    api.post(`/manga/${id}/views`).catch(() => {})
+
+    loadStatsAndComments()
+  }, [id])
+
+  const handleRate = async (rating: number) => {
+    if (!isLoggedIn) {
+      alert('Please log in to rate this manga.')
+      return
+    }
+    try {
+      await api.post(`/manga/${id}/rating`, { rating })
+      // Reload stats
+      loadStatsAndComments()
+    } catch (err: any) {
+      alert(err.message || 'Failed to submit rating.')
+    }
+  }
+
+  const handleCommentSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!commentText.trim() || !id) return
+
+    try {
+      setCommentSubmitting(true)
+      await api.post('/comments', {
+        mangaId: id,
+        content: commentText.trim(),
+        chapterId: null
+      })
+      setCommentText('')
+      loadStatsAndComments() // reload comments
+    } catch (err: any) {
+      alert(err.message || 'Failed to post comment.')
+    } finally {
+      setCommentSubmitting(false)
+    }
+  }
+
+  const handleCommentDelete = async (commentId: number) => {
+    if (!confirm('Are you sure you want to delete this comment?')) return
+    try {
+      await api.delete(`/comments/${commentId}`)
+      setComments(comments.filter((c) => c.id !== commentId))
+    } catch (err: any) {
+      alert(err.message || 'Failed to delete comment.')
+    }
+  }
+
+  // Relative Time helper
+  const formatTimeAgo = (dateStr: string) => {
+    const elapsed = Date.now() - new Date(dateStr).getTime()
+    const mins = Math.floor(elapsed / 60000)
+    const hours = Math.floor(mins / 60)
+    const days = Math.floor(hours / 24)
+
+    if (mins < 1) return 'Just now'
+    if (mins < 60) return `${mins}m ago`
+    if (hours < 24) return `${hours}h ago`
+    return `${days}d ago`
+  }
 
   if (isLoading || !mangaRes) {
     return (
@@ -151,6 +259,41 @@ export function MangaDetailPage() {
               {manga.attributes.year && (
                 <span className="text-muted text-sm">{manga.attributes.year}</span>
               )}
+            </div>
+
+            {/* Stats Row: Views & Star Rating */}
+            <div className="flex flex-wrap items-center gap-4 bg-card/40 border border-white/5 p-3 rounded-xl mb-2 text-xs font-bold text-muted uppercase">
+              <span className="flex items-center gap-1.5 text-white/80">
+                <i className="fa-solid fa-eye text-accent text-sm" />
+                <span>{stats.views.toLocaleString()} Views</span>
+              </span>
+              <span className="h-3 w-px bg-gray-800" />
+              <span className="flex items-center gap-1.5 text-white/80">
+                <i className="fa-solid fa-star text-amber-400 text-sm" />
+                <span>{stats.averageRating ? `${stats.averageRating} / 5` : 'No rating'} ({stats.totalRatings} votes)</span>
+              </span>
+              
+              <span className="h-3 w-px bg-gray-800" />
+              
+              {/* Interactive Star Rating Selector */}
+              <div className="flex items-center gap-1">
+                <span className="mr-1 text-[10px] lowercase text-muted">your rating:</span>
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button
+                    key={star}
+                    onClick={() => handleRate(star)}
+                    className="p-0.5 cursor-pointer text-sm transition-transform hover:scale-125 bg-transparent border-none"
+                    title={`Rate ${star} Stars`}
+                  >
+                    <i className={`fa-solid fa-star ${
+                      (hoverRating || stats.userRating) >= star ? 'text-amber-400' : 'text-gray-700'
+                    }`}
+                    onMouseEnter={() => setHoverRating(star)}
+                    onMouseLeave={() => setHoverRating(0)}
+                    />
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
@@ -377,6 +520,94 @@ export function MangaDetailPage() {
             </div>
           </div>
         ))}
+      </section>
+
+      {/* ═══════════════════════════════════════════════════ */}
+      {/* MANGA LEVEL COMMENTS FEED                          */}
+      {/* ═══════════════════════════════════════════════════ */}
+      <section className="border-t border-gray-800/60 pt-8 mt-6">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-2 h-8 bg-accent rounded-full" />
+          <h2 className="text-2xl font-black text-white uppercase tracking-tight">
+            Discussion Feed
+          </h2>
+          <span className="text-muted text-sm">({comments.length})</span>
+        </div>
+
+        {/* Comment Composer */}
+        {isLoggedIn ? (
+          <form onSubmit={handleCommentSubmit} className="flex gap-4 items-start bg-card/30 border border-white/5 p-5 rounded-2xl mb-6">
+            <img
+              src={`https://api.dicebear.com/7.x/bottts/svg?seed=${currentUsername}`}
+              className="w-10 h-10 rounded-xl bg-gray-800 border border-white/5 flex-shrink-0"
+              alt={currentUsername ?? 'User'}
+            />
+            <div className="flex-grow flex flex-col sm:flex-row gap-3">
+              <input
+                type="text"
+                value={commentText}
+                onChange={(e) => setCommentText(e.target.value)}
+                placeholder="Write a comment about this manga..."
+                className="flex-grow bg-[#2A2A2A] border border-gray-700/50 rounded-xl py-3 px-4 text-sm text-white placeholder-gray-500 outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 transition-all font-semibold"
+                required
+              />
+              <button
+                type="submit"
+                disabled={commentSubmitting || !commentText.trim()}
+                className="bg-accent hover:bg-accent-hover text-black text-xs font-black uppercase tracking-wider py-3.5 px-6 rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer flex-shrink-0"
+              >
+                <i className="fa-solid fa-paper-plane" />
+                <span>Comment</span>
+              </button>
+            </div>
+          </form>
+        ) : (
+          <div className="bg-black/10 border border-dashed border-white/5 rounded-2xl p-6 text-center text-xs font-bold text-muted uppercase tracking-wider mb-6">
+            Please <Link to="/login" className="text-accent underline font-black">log in</Link> to share your comments.
+          </div>
+        )}
+
+        {/* Comments List */}
+        {comments.length === 0 ? (
+          <div className="bg-card/45 border border-white/5 rounded-2xl p-10 text-center text-xs font-bold text-muted uppercase tracking-wider">
+            No comments yet. Start the conversation!
+          </div>
+        ) : (
+          <div className="flex flex-col gap-4">
+            {comments.map((comment) => (
+              <div
+                key={comment.id}
+                className="bg-card/30 border border-gray-800/40 p-4 rounded-xl flex gap-4 items-start hover:bg-card/50 transition-colors"
+              >
+                <img
+                  src={comment.avatarUrl || `https://api.dicebear.com/7.x/bottts/svg?seed=${comment.username}`}
+                  className="w-10 h-10 rounded-xl bg-gray-800 border border-white/5 flex-shrink-0"
+                  alt={comment.username}
+                />
+                <div className="min-w-0 flex-1 flex flex-col gap-1">
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-2">
+                      <span className="font-black text-sm text-white">{comment.username}</span>
+                      <span className="text-[10px] text-muted font-bold">{formatTimeAgo(comment.createdAt)}</span>
+                    </div>
+                    {isLoggedIn && currentUsername === comment.username && (
+                      <button
+                        onClick={() => handleCommentDelete(comment.id)}
+                        className="text-red-400 hover:text-red-500 transition-colors p-1 cursor-pointer bg-transparent border-none"
+                        title="Delete comment"
+                      >
+                        <i className="fa-solid fa-trash text-xs" />
+                      </button>
+                    )}
+                  </div>
+                  <p className="text-gray-300 text-sm leading-relaxed font-semibold whitespace-pre-line">
+                    {comment.content}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </section>
     </div>
   )

@@ -166,6 +166,12 @@ export function Header() {
         >
           NEW RELEASES
         </Link>
+        <Link
+          to="/forum"
+          className="flex items-center gap-2 bg-card hover:bg-gray-800 text-muted hover:text-white px-4 py-2 rounded-full text-sm font-semibold transition-all duration-300 hover:shadow-md"
+        >
+          FORUM
+        </Link>
       </nav>
 
       {/* Right side Actions */}
@@ -284,6 +290,13 @@ export function Header() {
             onClick={() => setIsSidebarOpen(false)}
           >
             <i className="fa-solid fa-bookmark w-5 text-center text-muted" /> My Library
+          </Link>
+          <Link
+            to="/forum"
+            className="flex items-center gap-4 text-white font-semibold p-3 rounded-xl hover:bg-accent/10 hover:text-accent transition-all duration-300 transform hover:translate-x-2"
+            onClick={() => setIsSidebarOpen(false)}
+          >
+            <i className="fa-solid fa-comments w-5 text-center text-muted" /> Forum
           </Link>
           <button
             onClick={() => {

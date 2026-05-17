@@ -9,6 +9,7 @@ import { ReaderPage } from './pages/Reader'
 import { LoginPage } from './pages/Login'
 import { SignupPage } from './pages/Signup'
 import { NotFoundPage } from './pages/NotFound'
+import { ForumPage } from './pages/Forum'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -31,6 +32,9 @@ function App() {
             <Route path="/manga/:id" element={<MangaDetailPage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/signup" element={<SignupPage />} />
+            <Route path="/forum" element={<ForumPage />} />
+            <Route path="/forum/category/:categoryId" element={<ForumPage />} />
+            <Route path="/forum/thread/:threadId" element={<ForumPage />} />
             <Route path="*" element={<NotFoundPage />} />
           </Route>
           <Route path="/reader/:chapterId" element={<ReaderPage />} />
