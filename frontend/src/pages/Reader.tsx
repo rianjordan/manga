@@ -6,6 +6,61 @@ import { useSettings, useAuth } from '../store'
 import { useReadingHistory } from '../store/user-data'
 import { useToast } from '../store/toast'
 
+// Helper to fetch an image with retry logic
+const fetchImageWithRetry = async (url: string, retries = 3): Promise<Blob> => {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      const response = await fetch(url)
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
+      return await response.blob()
+    } catch (e) {
+      if (attempt === retries) throw e;
+      await new Promise((resolve) => setTimeout(resolve, 1000 * attempt))
+    }
+  }
+  throw new Error('Failed to fetch image after retries')
+}
+
+// Convert a Blob to an HTMLImageElement to get dimensions
+const blobToImage = (blob: Blob): Promise<HTMLImageElement> => {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    const url = URL.createObjectURL(blob)
+    img.src = url
+    img.onload = () => {
+      URL.revokeObjectURL(url)
+      resolve(img)
+    }
+    img.onerror = (e) => {
+      URL.revokeObjectURL(url)
+      reject(e)
+    }
+  })
+}
+
+// Draw HTMLImageElement to a canvas and get base64 JPEG
+const imageToJpegBase64 = (img: HTMLImageElement): string => {
+  const canvas = document.createElement('canvas')
+  canvas.width = img.naturalWidth
+  canvas.height = img.naturalHeight
+  const ctx = canvas.getContext('2d')
+  if (!ctx) throw new Error('Could not create canvas 2d context')
+  ctx.drawImage(img, 0, 0)
+  return canvas.toDataURL('image/jpeg', 0.9)
+}
+
+// Helper to trigger browser download of a blob
+const triggerDownload = (blob: Blob, filename: string) => {
+  const blobUrl = window.URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = blobUrl
+  link.download = filename
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  window.URL.revokeObjectURL(blobUrl)
+}
+
 export function ReaderPage() {
   const { chapterId } = useParams<{ chapterId: string }>()
   const navigate = useNavigate()
@@ -18,6 +73,18 @@ export function ReaderPage() {
   const [loadedPages, setLoadedPages] = useState<Set<number>>(new Set([0, 1, 2]))
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [isDownloading, setIsDownloading] = useState(false)
+  const [showDownloadModal, setShowDownloadModal] = useState(false)
+  const [downloadProgress, setDownloadProgress] = useState<{
+    current: number
+    total: number
+    phase: string
+    format: string
+  }>({
+    current: 0,
+    total: 0,
+    phase: '',
+    format: '',
+  })
   const [showChapterModal, setShowChapterModal] = useState(false)
   const [modalSearch, setModalSearch] = useState('')
   const containerRef = useRef<HTMLDivElement>(null)
@@ -426,31 +493,320 @@ export function ReaderPage() {
     }
   }
 
-  // Chapter Image Downloader
-  const downloadChapter = async () => {
+  // Download chapter flow (opens format chooser modal)
+  const downloadChapter = () => {
+    if (isDownloading) return
+    setShowDownloadModal(true)
+  }
+
+  const handleDownload = async (format: 'pdf' | 'cbz' | 'zip' | 'images') => {
     if (isDownloading || imageList.length === 0) return
     setIsDownloading(true)
+    setDownloadProgress({
+      current: 0,
+      total: imageList.length,
+      phase: 'Initializing connection...',
+      format,
+    })
+
+    // Premium sanitization: remove Windows/Mac illegal file path chars, keeping spaces, dots, dashes, and single quotes intact
+    const cleanTitle = (mangaTitle ?? 'Manga')
+      .replace(/[\\/:*?"<>|]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim()
+    
+    const cleanChapTitle = chapterTitle
+      ? ` - ${chapterTitle.replace(/[\\/:*?"<>|]/g, '').replace(/\s+/g, ' ').trim()}`
+      : ''
+      
+    // Limit chapter title length to keep filename under safe OS length limits
+    const truncatedChapTitle = cleanChapTitle.length > 40 
+      ? `${cleanChapTitle.substring(0, 40)}...` 
+      : cleanChapTitle
+
+    const fileNameBase = `${cleanTitle} - Ch. ${chapterNum ?? '0'}${truncatedChapTitle}`
+
     try {
-      const sanitizedTitle = (mangaTitle ?? 'manga').replace(/[^a-zA-Z0-9]/g, '_')
+      const fetchedBlobs: Blob[] = []
+      
+      // Step 1: Download all image pages
       for (let i = 0; i < imageList.length; i++) {
+        setDownloadProgress((prev) => ({
+          ...prev,
+          current: i + 1,
+          phase: `Downloading page ${i + 1} of ${imageList.length}...`,
+        }))
+
         const url = imageUrl(`${qualityPath}/${hash}/${imageList[i]}`)
-        const response = await fetch(url)
-        const blob = await response.blob()
-        const blobUrl = window.URL.createObjectURL(blob)
-        const link = document.createElement('a')
-        link.href = blobUrl
-        link.download = `${sanitizedTitle}_ch${chapterNum ?? '0'}_page-${String(i + 1).padStart(3, '0')}.jpg`
-        document.body.appendChild(link)
-        link.click()
-        document.body.removeChild(link)
-        window.URL.revokeObjectURL(blobUrl)
-        await new Promise((r) => setTimeout(r, 200)) // 200ms delay to keep download queue orderly
+        const blob = await fetchImageWithRetry(url)
+        fetchedBlobs.push(blob)
+        
+        // Brief pause to prevent rate limiting
+        await new Promise((r) => setTimeout(r, 100))
       }
-    } catch (e) {
-      console.error('Failed to download images:', e)
-    } finally {
+
+      // Step 2: Compile based on chosen format
+      if (format === 'pdf') {
+        setDownloadProgress((prev) => ({
+          ...prev,
+          phase: 'Compiling high-quality PDF document...',
+        }))
+        
+        const { jsPDF } = await import('jspdf')
+        const pdf = new jsPDF({
+          orientation: 'portrait',
+          unit: 'px',
+        })
+        pdf.deletePage(1)
+
+        for (let i = 0; i < fetchedBlobs.length; i++) {
+          setDownloadProgress((prev) => ({
+            ...prev,
+            phase: `Processing page ${i + 1} of ${fetchedBlobs.length} into PDF...`,
+          }))
+          
+          const img = await blobToImage(fetchedBlobs[i])
+          const width = img.naturalWidth
+          const height = img.naturalHeight
+          const jpegDataUrl = imageToJpegBase64(img)
+          
+          pdf.addPage([width, height], width > height ? 'landscape' : 'portrait')
+          pdf.addImage(jpegDataUrl, 'JPEG', 0, 0, width, height, undefined, 'FAST')
+          
+          // Let the browser UI breathe
+          await new Promise((r) => setTimeout(r, 10))
+        }
+
+        setDownloadProgress((prev) => ({
+          ...prev,
+          phase: 'Saving PDF file...',
+        }))
+        
+        const pdfBlob = pdf.output('blob')
+        triggerDownload(pdfBlob, `${fileNameBase}.pdf`)
+      } 
+      else if (format === 'cbz' || format === 'zip') {
+        const extName = format === 'cbz' ? 'cbz' : 'zip'
+        setDownloadProgress((prev) => ({
+          ...prev,
+          phase: `Packaging pages into ${extName.toUpperCase()} archive...`,
+        }))
+
+        const JSZip = (await import('jszip')).default
+        const zip = new JSZip()
+        
+        for (let i = 0; i < fetchedBlobs.length; i++) {
+          const blob = fetchedBlobs[i]
+          const originalName = imageList[i]
+          const ext = originalName.split('.').pop() ?? 'jpg'
+          const fileName = `page_${String(i + 1).padStart(3, '0')}.${ext}`
+          zip.file(fileName, blob)
+        }
+
+        const zipBlob = await zip.generateAsync({ type: 'blob' })
+        triggerDownload(zipBlob, `${fileNameBase}.${extName}`)
+      } 
+      else if (format === 'images') {
+        setDownloadProgress((prev) => ({
+          ...prev,
+          phase: 'Saving individual images to your downloads folder...',
+        }))
+
+        for (let i = 0; i < fetchedBlobs.length; i++) {
+          const originalName = imageList[i]
+          const ext = originalName.split('.').pop() ?? 'jpg'
+          triggerDownload(fetchedBlobs[i], `${fileNameBase} - Page ${String(i + 1).padStart(3, '0')}.${ext}`)
+          await new Promise((r) => setTimeout(r, 100))
+        }
+      }
+
+      // Success
+      setDownloadProgress((prev) => ({
+        ...prev,
+        phase: 'Download completed successfully!',
+      }))
+      
+      // Auto close modal after a short delay
+      setTimeout(() => {
+        setShowDownloadModal(false)
+        setIsDownloading(false)
+        setDownloadProgress({ current: 0, total: 0, phase: '', format: '' })
+      }, 1500)
+
+    } catch (err: any) {
+      console.error('Failed to download:', err)
+      useToast.getState().addToast('error', err.message || 'Download failed. Please check your internet connection.')
+      setDownloadProgress((prev) => ({
+        ...prev,
+        phase: 'An error occurred during download.',
+      }))
       setIsDownloading(false)
     }
+  }
+
+  const renderDownloadModal = () => {
+    if (!showDownloadModal) return null
+
+    return (
+      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+        {/* Backdrop */}
+        <div 
+          className="absolute inset-0 bg-black/85 backdrop-blur-md cursor-pointer transition-opacity duration-300"
+          onClick={() => {
+            if (!isDownloading) setShowDownloadModal(false)
+          }}
+        />
+        
+        {/* Modal Content */}
+        <div className="relative w-full max-w-lg bg-[#151518]/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl flex flex-col overflow-hidden transform transition-all duration-300 scale-100 animate-scale-up">
+          {/* Header */}
+          <div className="p-5 border-b border-white/5 flex items-center justify-between">
+            <div>
+              <h3 className="text-white font-black text-lg uppercase tracking-tight">Chapter Downloader</h3>
+              <p className="text-muted text-[10px] font-bold uppercase tracking-wider mt-0.5 line-clamp-1">
+                {mangaTitle} &mdash; Ch. {chapterNum ?? '0'}
+              </p>
+            </div>
+            {!isDownloading && (
+              <button
+                onClick={() => setShowDownloadModal(false)}
+                className="w-9 h-9 rounded-xl bg-white/5 hover:bg-white/10 text-white hover:text-accent transition-colors flex items-center justify-center cursor-pointer"
+              >
+                <i className="fa-solid fa-xmark text-sm" />
+              </button>
+            )}
+          </div>
+
+          {/* Body */}
+          <div className="p-6 flex flex-col gap-4">
+            {isDownloading ? (
+              /* Downloading Progress State */
+              <div className="flex flex-col items-center py-6 text-center">
+                {/* Visual indicator (pulsing / spinning) */}
+                <div className="relative w-24 h-24 mb-6 flex items-center justify-center">
+                  <div className="absolute inset-0 border-4 border-accent/10 border-t-accent rounded-full animate-spin" />
+                  <i className={`fa-solid ${
+                    downloadProgress.format === 'pdf' ? 'fa-file-pdf text-accent text-3xl' :
+                    downloadProgress.format === 'cbz' ? 'fa-book-open text-purple-400 text-3xl' :
+                    downloadProgress.format === 'zip' ? 'fa-file-zipper text-blue-400 text-3xl' :
+                    'fa-images text-amber-400 text-3xl'
+                  } animate-pulse`} />
+                </div>
+                
+                <h4 className="text-white font-black text-sm uppercase tracking-wider">
+                  Preparing Download
+                </h4>
+                
+                {/* Progress details */}
+                <div className="mt-2 text-xs font-semibold text-muted max-w-sm">
+                  {downloadProgress.phase}
+                </div>
+
+                {/* Progress bar */}
+                {downloadProgress.total > 0 && (
+                  <div className="w-full mt-6">
+                    <div className="flex items-center justify-between text-[10px] font-black uppercase text-muted mb-1.5">
+                      <span>Progress</span>
+                      <span>{Math.round((downloadProgress.current / downloadProgress.total) * 100)}%</span>
+                    </div>
+                    <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden border border-white/5">
+                      <div 
+                        className="h-full bg-accent transition-all duration-300 shadow-[0_0_10px_rgba(214,51,108,0.5)]"
+                        style={{ width: `${(downloadProgress.current / downloadProgress.total) * 100}%` }}
+                      />
+                    </div>
+                    <div className="text-[10px] font-bold text-muted/60 mt-1">
+                      Processed {downloadProgress.current} of {downloadProgress.total} pages
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              /* Selection State */
+              <div className="flex flex-col gap-4">
+                <p className="text-xs text-muted font-medium leading-relaxed">
+                  Choose a format to download all <span className="text-white font-bold">{imageList.length} pages</span> of this chapter. Dynamic conversion happens instantly in your browser!
+                </p>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
+                  {/* PDF option */}
+                  <button
+                    onClick={() => handleDownload('pdf')}
+                    className="flex items-start gap-4 p-4 rounded-xl border border-white/5 bg-white/5 hover:bg-accent/5 hover:border-accent group transition-all text-left cursor-pointer"
+                  >
+                    <div className="w-10 h-10 rounded-lg bg-accent/10 border border-accent/20 flex items-center justify-center text-accent group-hover:scale-110 transition-transform">
+                      <i className="fa-solid fa-file-pdf text-lg" />
+                    </div>
+                    <div>
+                      <h4 className="text-white font-black text-xs uppercase tracking-wide group-hover:text-accent transition-colors">
+                        PDF Document
+                      </h4>
+                      <p className="text-[10px] text-muted font-medium mt-1 leading-normal">
+                        All pages compiled into a single PDF. Best for tablets.
+                      </p>
+                    </div>
+                  </button>
+
+                  {/* CBZ option */}
+                  <button
+                    onClick={() => handleDownload('cbz')}
+                    className="flex items-start gap-4 p-4 rounded-xl border border-white/5 bg-white/5 hover:bg-purple-500/5 hover:border-purple-500 group transition-all text-left cursor-pointer"
+                  >
+                    <div className="w-10 h-10 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 group-hover:scale-110 transition-transform">
+                      <i className="fa-solid fa-book-open text-base" />
+                    </div>
+                    <div>
+                      <h4 className="text-white font-black text-xs uppercase tracking-wide group-hover:text-purple-400 transition-colors">
+                        Comic Book (CBZ)
+                      </h4>
+                      <p className="text-[10px] text-muted font-medium mt-1 leading-normal">
+                        Standard manga archive for reader apps.
+                      </p>
+                    </div>
+                  </button>
+
+                  {/* ZIP option */}
+                  <button
+                    onClick={() => handleDownload('zip')}
+                    className="flex items-start gap-4 p-4 rounded-xl border border-white/5 bg-white/5 hover:bg-blue-500/5 hover:border-blue-500 group transition-all text-left cursor-pointer"
+                  >
+                    <div className="w-10 h-10 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 group-hover:scale-110 transition-transform">
+                      <i className="fa-solid fa-file-zipper text-lg" />
+                    </div>
+                    <div>
+                      <h4 className="text-white font-black text-xs uppercase tracking-wide group-hover:text-blue-400 transition-colors">
+                        ZIP Archive
+                      </h4>
+                      <p className="text-[10px] text-muted font-medium mt-1 leading-normal">
+                        All page files compressed inside a standard ZIP folder.
+                      </p>
+                    </div>
+                  </button>
+
+                  {/* 1-by-1 option */}
+                  <button
+                    onClick={() => handleDownload('images')}
+                    className="flex items-start gap-4 p-4 rounded-xl border border-white/5 bg-white/5 hover:bg-amber-500/5 hover:border-amber-500 group transition-all text-left cursor-pointer"
+                  >
+                    <div className="w-10 h-10 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 group-hover:scale-110 transition-transform">
+                      <i className="fa-solid fa-images text-base" />
+                    </div>
+                    <div>
+                      <h4 className="text-white font-black text-xs uppercase tracking-wide group-hover:text-amber-400 transition-colors">
+                        Individual Files
+                      </h4>
+                      <p className="text-[10px] text-muted font-medium mt-1 leading-normal">
+                        Download pages one-by-one to your device.
+                      </p>
+                    </div>
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    )
   }
 
   if (pagesLoading) {
@@ -497,6 +853,7 @@ export function ReaderPage() {
         />
         {renderChapterModal()}
         {renderCommentsSidebar()}
+        {renderDownloadModal()}
       </>
     )
   }
@@ -680,6 +1037,7 @@ export function ReaderPage() {
 
       {renderChapterModal()}
       {renderCommentsSidebar()}
+      {renderDownloadModal()}
 
       {/* Bottom progress bar */}
       <div className="h-1.5 bg-gray-800">
@@ -715,7 +1073,7 @@ function ScrollReader({
   chapterTitle?: string | null
   navigate: any
   mangaId: string
-  downloadChapter: () => Promise<void>
+  downloadChapter: () => void
   isDownloading: boolean
   prevChapter: any
   nextChapter: any
