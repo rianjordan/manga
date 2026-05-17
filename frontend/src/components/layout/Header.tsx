@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useAuth, useSettings } from '../../store'
 import { useReadingHistory } from '../../store/user-data'
 import { coverUrl } from '../../services/manga'
@@ -8,6 +8,7 @@ export function Header() {
   const { isLoggedIn, username, logout } = useAuth()
   const { theme, toggleTheme } = useSettings()
   const { getRecent } = useReadingHistory()
+  const navigate = useNavigate()
 
   const [isBrowseOpen, setIsBrowseOpen] = useState(false)
   const [isHistoryOpen, setIsHistoryOpen] = useState(false)
@@ -187,7 +188,7 @@ export function Header() {
               if (e.key === 'Enter' && (e.target as HTMLInputElement).value.trim()) {
                 const searchParams = new URLSearchParams()
                 searchParams.set('q', (e.target as HTMLInputElement).value.trim())
-                window.location.href = `/search?${searchParams.toString()}`
+                navigate(`/search?${searchParams.toString()}`)
               }
             }}
           />
