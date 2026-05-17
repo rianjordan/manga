@@ -286,7 +286,7 @@ function HeroSlide({ manga }: { manga: Manga }) {
   const tags = manga.attributes.tags?.slice(0, 4) ?? []
 
   return (
-    <section className="relative bg-[#1a1a1a]/95 backdrop-blur-sm overflow-hidden h-full">
+    <section className="relative bg-[#121212]/65 backdrop-blur-md overflow-hidden h-full">
       <div className="grid grid-cols-1 md:grid-cols-[400px_1fr] gap-6 md:gap-16 p-6 md:p-12 items-center h-full">
         {coverFile && (
           <div className="relative h-full flex items-center justify-center max-h-[300px] md:max-h-full">
