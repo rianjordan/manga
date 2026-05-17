@@ -40,7 +40,7 @@ export function Layout() {
   return (
     <div 
       id="layout-root"
-      className="min-h-screen flex flex-col text-white font-sans antialiased overflow-x-hidden transition-colors duration-300"
+      className="min-h-screen flex flex-col text-white font-sans antialiased overflow-x-hidden transition-colors duration-300 pt-[68px]"
       style={{
         backgroundImage: `linear-gradient(rgba(12, 12, 12, 0.82), rgba(12, 12, 12, 0.82)), url('/img/website/bg.jpg')`,
         backgroundSize: 'cover',

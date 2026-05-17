@@ -171,19 +171,47 @@ export function MangaDetailPage() {
           </div>
 
           <div className="flex gap-2 flex-wrap">
-            {availableLanguages.map((l) => (
-              <button
-                key={l}
-                onClick={() => setSelectedLang(l)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide transition-all ${
-                  activeLang === l
-                    ? 'bg-accent text-dark'
-                    : 'bg-card text-muted hover:text-accent border border-gray-700/50'
-                }`}
-              >
-                {l === 'en' ? '🇺🇸 EN' : l === 'id' ? '🇮🇩 ID' : l === 'ja' ? '🇯🇵 JA' : l === 'es' ? '🇪🇸 ES' : l.toUpperCase()}
-              </button>
-            ))}
+            {availableLanguages.map((l) => {
+              const mapping: Record<string, string> = {
+                en: 'us',
+                id: 'id',
+                ja: 'jp',
+                ko: 'kr',
+                es: 'es',
+                fr: 'fr',
+                zh: 'cn',
+                pt: 'pt',
+                ru: 'ru',
+                it: 'it',
+                de: 'de',
+                vi: 'vn',
+                pl: 'pl',
+                tr: 'tr',
+              }
+              const country = mapping[l.toLowerCase()] ?? l.toLowerCase()
+
+              return (
+                <button
+                  key={l}
+                  onClick={() => setSelectedLang(l)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-black uppercase tracking-wide transition-all flex items-center gap-1.5 cursor-pointer ${
+                    activeLang === l
+                      ? 'bg-accent text-dark shadow-md shadow-accent/25'
+                      : 'bg-card text-muted hover:text-accent border border-gray-700/50'
+                  }`}
+                >
+                  <img
+                    src={`https://flagcdn.com/16x12/${country}.png`}
+                    alt={l}
+                    className="w-4 h-3 object-contain rounded-sm flex-shrink-0"
+                    onError={(e) => {
+                      (e.target as HTMLElement).style.display = 'none'
+                    }}
+                  />
+                  <span>{l.toUpperCase()}</span>
+                </button>
+              )
+            })}
           </div>
         </div>
 

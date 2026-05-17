@@ -260,3 +260,20 @@
   color: #0f172a !important;
 }
 
+/* Light mode overrides for Hero Carousel Slide */
+.light-mode section.relative.bg-\[\#121212\]\/65 {
+  background-color: rgba(255, 255, 255, 0.75) !important;
+  border-color: #cbd5e1 !important;
+}
+
+.light-mode section.relative.bg-\[\#121212\]\/65 h1.text-white {
+  color: #0f172a !important;
+  text-shadow: none !important;
+  filter: none !important;
+}
+
+.light-mode section.relative.bg-\[\#121212\]\/65 span.bg-white\/5 {
+  background-color: #f1f5f9 !important;
+  color: #334155 !important;
+  border-color: #cbd5e1 !important;
+}

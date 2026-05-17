@@ -103,14 +103,14 @@ export function HomePage() {
     <div className="flex flex-col gap-10">
       {/* Hero Carousel */}
       {featured.length > 0 && (
-        <div className="relative group h-[750px] sm:h-[650px] md:h-[550px] w-full overflow-hidden rounded-2xl border border-gray-800/40 shadow-2xl">
+        <div className="relative group h-[750px] sm:h-[650px] md:h-[550px] w-full overflow-hidden rounded-2xl border border-gray-800/40 shadow-2xl bg-card">
           {featured.slice(0, 5).map((manga, idx) => (
             <div
               key={manga.id}
-              className={`absolute inset-0 transition-all duration-[1000ms] ease-in-out ${
+              className={`absolute inset-0 transition-opacity duration-700 ease-in-out ${
                 idx === currentSlide
-                  ? 'opacity-100 scale-100 z-10 pointer-events-auto'
-                  : 'opacity-0 scale-95 z-0 pointer-events-none'
+                  ? 'opacity-100 z-10 pointer-events-auto'
+                  : 'opacity-0 z-0 pointer-events-none'
               }`}
             >
               <HeroSlide manga={manga} />
@@ -134,8 +134,8 @@ export function HomePage() {
             <i className="fa-solid fa-chevron-right text-lg" />
           </button>
           
-          {/* Pagination Indicators */}
-          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2.5 z-20 bg-black/40 backdrop-blur-md px-4 py-2 rounded-full border border-white/5">
+          {/* Pagination Indicators - aligned bottom-right to prevent button overlap */}
+          <div className="absolute bottom-6 right-6 md:right-12 flex gap-2.5 z-20 bg-black/45 backdrop-blur-md px-4 py-2.5 rounded-full border border-white/5">
             {Array.from({ length: Math.min(featured.length, 5) }).map((_, idx) => (
               <button
                 key={idx}
@@ -287,42 +287,42 @@ function HeroSlide({ manga }: { manga: Manga }) {
 
   return (
     <section className="relative bg-[#121212]/65 backdrop-blur-md overflow-hidden h-full">
-      <div className="grid grid-cols-1 md:grid-cols-[400px_1fr] gap-6 md:gap-16 p-6 md:p-12 items-center h-full">
+      <div className="grid grid-cols-1 md:grid-cols-[380px_1fr] gap-6 md:gap-14 p-5 md:p-12 items-center h-full pb-16 md:pb-12">
         {coverFile && (
-          <div className="relative h-full flex items-center justify-center max-h-[300px] md:max-h-full">
+          <div className="relative h-full flex items-center justify-center max-h-[220px] md:max-h-[460px] flex-shrink-0">
             <img
               src={coverUrl(manga.id, coverFile)}
               alt={title}
-              className="max-h-full aspect-portrait object-cover rounded-xl shadow-[0_20px_60px_rgba(0,0,0,0.6)]"
+              className="max-h-full object-contain rounded-xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-white/5"
             />
           </div>
         )}
 
-        <div className="flex flex-col justify-center">
-          <div className="space-y-6">
+        <div className="flex flex-col justify-center min-w-0">
+          <div className="space-y-4 md:space-y-6">
             <div className="flex items-center gap-3">
               <span className="bg-accent text-dark px-3 py-1 rounded-md text-xs font-black uppercase tracking-widest shadow-lg shadow-accent/20">
                 {status.replace('_', ' ')}
               </span>
-              <span className="text-accent/60 font-bold text-xs">
-                <i className="fa-solid fa-fire-flame-curved mr-1" />
+              <span className="text-accent/80 font-extrabold text-xs">
+                <i className="fa-solid fa-fire-flame-curved mr-1.5 animate-pulse" />
                 Featured
               </span>
             </div>
 
-            <h1 className="text-4xl sm:text-5xl xl:text-6xl font-black uppercase tracking-tight leading-[0.95] text-white drop-shadow-2xl line-clamp-2">
+            <h1 className="text-3xl sm:text-5xl xl:text-6xl font-black uppercase tracking-tight leading-[0.95] text-white drop-shadow-2xl line-clamp-2">
               {title}
             </h1>
 
             {desc && (
-              <p className="text-muted text-sm md:text-base leading-relaxed line-clamp-3 md:line-clamp-4">{desc}</p>
+              <p className="text-muted text-xs sm:text-sm md:text-base leading-relaxed line-clamp-2 sm:line-clamp-3 md:line-clamp-4">{desc}</p>
             )}
 
-            <div className="flex gap-3 flex-wrap">
+            <div className="flex gap-2 flex-wrap">
               {tags.map((tag: Tag) => (
                 <span
                   key={tag.id}
-                  className="px-3 py-1 rounded-full text-xs font-semibold bg-white/5 text-gray-300 border border-white/10"
+                  className="px-2.5 py-1 rounded-full text-[10px] sm:text-xs font-bold bg-white/5 text-gray-300 border border-white/10"
                 >
                   {tag.attributes.name.en}
                 </span>
@@ -331,7 +331,7 @@ function HeroSlide({ manga }: { manga: Manga }) {
 
             <Link
               to={`/manga/${manga.id}`}
-              className="inline-flex items-center gap-2 bg-accent hover:bg-pink-500 text-dark font-bold px-6 py-3 rounded-xl text-sm tracking-wide transition-all duration-300 hover:shadow-lg hover:shadow-accent/30 self-start"
+              className="inline-flex items-center gap-2 bg-accent hover:bg-pink-500 text-dark font-black px-6 py-3 rounded-xl text-xs sm:text-sm tracking-wide transition-all duration-300 hover:shadow-lg hover:shadow-accent/30 self-start shadow-md shadow-accent/15"
             >
               <i className="fa-solid fa-book-open" />
               VIEW DETAILS
