@@ -54,7 +54,8 @@ export function HomePage() {
     return () => clearInterval(interval)
   }, [featured.length])
 
-  if (latestLoading || trendingLoading) {
+  // Show full page skeleton only on initial mount when we don't have featured carousel data yet
+  if (latestLoading && featured.length === 0) {
     return (
       <div className="flex flex-col gap-10">
         {/* Skeleton Carousel */}
@@ -217,12 +218,12 @@ export function HomePage() {
         </section>
       )}
 
-      {/* Trending Updates Grid */}
+      {/* Discover Manga Grid */}
       <section className="scroll-reveal flex flex-col gap-8">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 border-b border-gray-800/40 pb-6">
           <div className="flex items-center gap-3">
             <div className="w-2 h-8 bg-accent rounded-full" />
-            <h2 className="text-2xl font-black text-white uppercase tracking-tight">Trending Updates</h2>
+            <h2 className="text-2xl font-black text-white uppercase tracking-tight">Discover Manga</h2>
           </div>
           
           {/* Filter Tabs */}
@@ -269,12 +270,26 @@ export function HomePage() {
           </div>
         </div>
 
-        {/* 5x4 Manga Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
-          {trending.map((manga: Manga, i: number) => (
-            <MangaCard key={manga.id} manga={manga} index={i} />
-          ))}
-        </div>
+        {/* 5x4 Manga Grid with Smooth Tab Switch Loading */}
+        {trendingLoading ? (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
+            {Array.from({ length: 10 }).map((_, i) => (
+              <div 
+                key={i} 
+                className="aspect-[2/3] bg-card/45 rounded-2xl animate-pulse border border-gray-800/30 flex flex-col justify-end p-4 gap-2"
+              >
+                <div className="h-4 bg-gray-700/50 rounded-md w-3/4" />
+                <div className="h-3 bg-gray-800/50 rounded-md w-1/2" />
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
+            {trending.map((manga: Manga, i: number) => (
+              <MangaCard key={manga.id} manga={manga} index={i} />
+            ))}
+          </div>
+        )}
 
         {/* Dynamic bottom pagination */}
         {totalPages > 1 && (
