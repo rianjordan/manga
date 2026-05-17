@@ -10,7 +10,7 @@ import { ReaderPage } from './pages/Reader'
 import { LoginPage } from './pages/Login'
 import { SignupPage } from './pages/Signup'
 import { NotFoundPage } from './pages/NotFound'
-import { ForumPage } from './pages/Forum'
+import { ForumPage } from './pages/Forum' // Refresh module cache
 import { AboutPage } from './pages/About'
 
 const queryClient = new QueryClient({
