@@ -23,7 +23,7 @@ export function Footer() {
               <Link to="/search" className="text-xs text-muted hover:text-accent transition-colors">Explore Catalog</Link>
               <Link to="/search?type=manga" className="text-xs text-muted hover:text-accent transition-colors">Manga</Link>
               <Link to="/search?type=manhwa" className="text-xs text-muted hover:text-accent transition-colors">Manhwa</Link>
-              <Link to="/search?order=latest" className="text-xs text-muted hover:text-accent transition-colors">New Releases</Link>
+              <Link to="/about" className="text-xs text-muted hover:text-accent transition-colors font-semibold text-sky-400">About Us</Link>
             </div>
           </div>
 
@@ -47,6 +47,7 @@ export function Footer() {
             <div className="flex flex-col gap-2">
               <Link to="/terms" className="text-xs text-muted hover:text-accent transition-colors">Terms of Service</Link>
               <Link to="/privacy" className="text-xs text-muted hover:text-accent transition-colors">Privacy Policy</Link>
+              <Link to="/dmca" className="text-xs text-muted hover:text-accent transition-colors">DMCA Policy</Link>
               <a href="https://mangadex.org" target="_blank" rel="noopener noreferrer" className="text-xs text-muted hover:text-accent transition-colors">
                 MangaDex
               </a>
