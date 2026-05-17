@@ -299,7 +299,7 @@ export function HomePage() {
               <span className="text-white font-black text-sm">
                 {String(page).padStart(2, '0')}{' '}
                 <span className="text-muted/40 mx-1">/</span>{' '}
-                {String(Math.min(totalPages, 10)).padStart(2, '0')}
+                {String(totalPages).padStart(2, '0')}
               </span>
             </div>
 
@@ -314,22 +314,35 @@ export function HomePage() {
               </button>
 
               <div className="hidden sm:flex gap-2">
-                {Array.from({ length: Math.min(totalPages, 5) }).map((_, idx) => {
-                  const pNum = idx + 1
-                  return (
-                    <button
-                      key={pNum}
-                      onClick={() => setPage(pNum)}
-                      className={`w-12 h-12 rounded-2xl font-black text-sm transition-all cursor-pointer ${
-                        page === pNum
-                          ? 'bg-accent text-dark shadow-lg shadow-accent/20'
-                          : 'bg-card border border-gray-800/40 text-muted hover:text-white hover:bg-gray-800'
-                      }`}
-                    >
-                      {pNum}
-                    </button>
-                  )
-                })}
+                {(() => {
+                  let startPage = 1
+                  if (totalPages <= 5) {
+                    startPage = 1
+                  } else if (page <= 3) {
+                    startPage = 1
+                  } else if (page >= totalPages - 2) {
+                    startPage = totalPages - 4
+                  } else {
+                    startPage = page - 2
+                  }
+                  const pagesCount = Math.min(totalPages, 5)
+                  return Array.from({ length: pagesCount }).map((_, idx) => {
+                    const pNum = startPage + idx
+                    return (
+                      <button
+                        key={pNum}
+                        onClick={() => setPage(pNum)}
+                        className={`w-12 h-12 rounded-2xl font-black text-sm transition-all cursor-pointer ${
+                          page === pNum
+                            ? 'bg-accent text-dark shadow-lg shadow-accent/20'
+                            : 'bg-card border border-gray-800/40 text-muted hover:text-white hover:bg-gray-800'
+                        }`}
+                      >
+                        {pNum}
+                      </button>
+                    )
+                  })
+                })()}
               </div>
 
               <button

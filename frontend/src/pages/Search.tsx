@@ -39,20 +39,28 @@ export function SearchPage() {
   const limit = 20
 
   useEffect(() => {
-    // Reset page on search or type change
+    // Sync search input and reset page on search or type change
+    setSearchInput(query)
     setPage(1)
   }, [query, type])
 
   const searchParamsObj: any = {
-    title: query || undefined,
+    title: query.trim() || undefined,
     limit,
     offset: (page - 1) * limit,
-    order: { relevance: 'desc' },
     hasAvailableChapters: true,
     contentRating: ['safe', 'suggestive'],
     includedTags: includedTags.length > 0 ? includedTags : undefined,
     excludedTags: excludedTags.length > 0 ? excludedTags : undefined,
     publicationDemographic: selectedDemographics.length > 0 ? selectedDemographics : undefined,
+  }
+
+  // Only use relevance sorting if a search query is actually present.
+  // Otherwise, default to popularity sorting (followedCount) to avoid MangaDex API 400 error.
+  if (query.trim()) {
+    searchParamsObj.order = { relevance: 'desc' }
+  } else {
+    searchParamsObj.order = { followedCount: 'desc' }
   }
 
   if (type === 'manhwa') {
@@ -219,14 +227,14 @@ export function SearchPage() {
             </p>
           )}
 
-          {data?.data.length === 0 ? (
+          {!data?.data || data.data.length === 0 ? (
             <div className="text-center py-20 text-muted font-bold min-h-[40vh] flex flex-col items-center justify-center gap-3">
               <i className="fa-solid fa-folder-open text-3xl opacity-30" />
               No manga found matching your advanced filters.
             </div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
-              {data?.data.map((manga: Manga, i: number) => (
+              {data.data.map((manga: Manga, i: number) => (
                 <MangaCard key={manga.id} manga={manga} index={i} />
               ))}
             </div>
@@ -239,7 +247,7 @@ export function SearchPage() {
                 <span className="text-white font-black text-sm">
                   {String(page).padStart(2, '0')}{' '}
                   <span className="text-muted/40 mx-1">/</span>{' '}
-                  {String(Math.min(totalPages, 10)).padStart(2, '0')}
+                  {String(totalPages).padStart(2, '0')}
                 </span>
               </div>
 
@@ -252,6 +260,38 @@ export function SearchPage() {
                 >
                   <i className="fa-solid fa-arrow-left text-sm transition-transform group-hover:-translate-x-1" />
                 </button>
+
+                <div className="hidden sm:flex gap-2">
+                  {(() => {
+                    let startPage = 1
+                    if (totalPages <= 5) {
+                      startPage = 1
+                    } else if (page <= 3) {
+                      startPage = 1
+                    } else if (page >= totalPages - 2) {
+                      startPage = totalPages - 4
+                    } else {
+                      startPage = page - 2
+                    }
+                    const pagesCount = Math.min(totalPages, 5)
+                    return Array.from({ length: pagesCount }).map((_, idx) => {
+                      const pNum = startPage + idx
+                      return (
+                        <button
+                          key={pNum}
+                          onClick={() => setPage(pNum)}
+                          className={`w-12 h-12 rounded-2xl font-black text-sm transition-all cursor-pointer ${
+                            page === pNum
+                              ? 'bg-accent text-dark shadow-lg shadow-accent/20'
+                              : 'bg-card border border-gray-800/40 text-muted hover:text-white hover:bg-gray-800'
+                          }`}
+                        >
+                          {pNum}
+                        </button>
+                      )
+                    })
+                  })()}
+                </div>
 
                 <button
                   onClick={() => setPage((p) => Math.min(totalPages, p + 1))}

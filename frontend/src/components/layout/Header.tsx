@@ -40,7 +40,7 @@ export function Header() {
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-darker/95 backdrop-blur-md border-b border-gray-800/60 shadow-lg py-3 px-4 md:px-8 flex justify-between items-center transition-all duration-300">
-      
+
       {/* Left Logo */}
       <Link to="/" className="flex items-center gap-3 cursor-pointer group">
         {logoSrc && <img src={logoSrc} alt="" className="w-8 h-8 rounded-lg" />}
@@ -254,9 +254,8 @@ export function Header() {
         />
       )}
       <aside
-        className={`fixed top-0 right-0 w-[300px] h-[100dvh] bg-card shadow-[-10px_0_40px_rgba(0,0,0,0.6)] z-[60] flex flex-col transition-all duration-500 ease-out transform ${
-          isSidebarOpen ? 'translate-x-0' : 'translate-x-full pointer-events-none invisible'
-        }`}
+        className={`fixed top-0 right-0 w-[300px] h-[100dvh] bg-card shadow-[-10px_0_40px_rgba(0,0,0,0.6)] z-[60] flex flex-col transition-all duration-500 ease-out transform ${isSidebarOpen ? 'translate-x-0' : 'translate-x-full pointer-events-none invisible'
+          }`}
       >
         <div className="flex justify-between items-center p-6 border-b border-gray-800/50 flex-shrink-0">
           <span className="font-bold text-xl tracking-wide text-white">Reader's Haven</span>
