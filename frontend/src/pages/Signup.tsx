@@ -32,14 +32,37 @@ export function SignupPage() {
   }
 
   return (
-    <div className="min-h-[80vh] flex items-center justify-center">
-      <div className="w-full max-w-md">
+    <div
+      className="min-h-screen w-full flex items-center justify-center relative overflow-hidden bg-cover bg-center bg-no-repeat py-12 px-4"
+      style={{
+        backgroundImage: `linear-gradient(rgba(18, 18, 18, 0.92), rgba(18, 18, 18, 0.92)), url('/loginbg.jpg')`
+      }}
+    >
+      {/* Back to Home Button */}
+      <Link
+        to="/"
+        className="fixed top-6 left-6 md:top-10 md:left-10 z-50 flex items-center gap-3 text-accent font-bold transition-all duration-300 group"
+      >
+        <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-accent/10 backdrop-blur-md border border-accent/20 flex items-center justify-center group-hover:bg-accent group-hover:text-white transition-all shadow-[0_0_20px_rgba(214,51,108,0.15)]">
+          <i className="fa-solid fa-arrow-left" />
+        </div>
+        <span className="hidden sm:block tracking-wide">Back to Home</span>
+      </Link>
+
+      {/* Background Ambient Glows */}
+      <div className="absolute top-[-15%] left-[-10%] w-[500px] h-[500px] rounded-full bg-accent/8 blur-[120px] pointer-events-none z-0 animate-pulse" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[400px] h-[400px] rounded-full bg-accent/5 blur-[120px] pointer-events-none z-0 animate-pulse" />
+
+      {/* Signup Card */}
+      <div className="w-full max-w-md relative z-10 animate-fade-in-up">
+        {/* Logo */}
         <Link to="/" className="flex items-center justify-center gap-3 mb-8 group">
           <span className="font-black text-3xl tracking-wider text-accent">Reader's Haven</span>
         </Link>
 
-        <div className="bg-card/80 backdrop-blur-xl rounded-2xl p-8 shadow-2xl border border-gray-800/40">
-          <h1 className="text-2xl font-black text-center mb-1 tracking-tight">Create Account</h1>
+        {/* Form Container */}
+        <div className="bg-card/85 backdrop-blur-xl rounded-2xl p-8 shadow-2xl border border-gray-800/40">
+          <h1 className="text-2xl font-black text-center mb-1 tracking-tight text-white">Create Account</h1>
           <p className="text-muted text-sm text-center mb-7">Join the community and start reading today</p>
 
           {error && (
@@ -50,6 +73,7 @@ export function SignupPage() {
           )}
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            {/* Username */}
             <div>
               <label className="text-sm font-semibold text-gray-300">Username</label>
               <div className="relative mt-1">
@@ -59,11 +83,13 @@ export function SignupPage() {
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   placeholder="Choose a username"
-                  className="w-full bg-surface border border-gray-700/50 rounded-xl py-3 pl-11 pr-4 text-sm text-white placeholder-gray-500 outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
+                  required
+                  className="w-full bg-[#2A2A2A] border border-gray-700/50 rounded-xl py-3 pl-11 pr-4 text-sm text-white placeholder-gray-500 outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
                 />
               </div>
             </div>
 
+            {/* Email Address */}
             <div>
               <label className="text-sm font-semibold text-gray-300">Email Address</label>
               <div className="relative mt-1">
@@ -73,11 +99,13 @@ export function SignupPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="you@example.com"
-                  className="w-full bg-surface border border-gray-700/50 rounded-xl py-3 pl-11 pr-4 text-sm text-white placeholder-gray-500 outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
+                  required
+                  className="w-full bg-[#2A2A2A] border border-gray-700/50 rounded-xl py-3 pl-11 pr-4 text-sm text-white placeholder-gray-500 outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
                 />
               </div>
             </div>
 
+            {/* Password */}
             <div>
               <label className="text-sm font-semibold text-gray-300">Password</label>
               <div className="relative mt-1">
@@ -87,11 +115,13 @@ export function SignupPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Create a strong password"
-                  className="w-full bg-surface border border-gray-700/50 rounded-xl py-3 pl-11 pr-4 text-sm text-white placeholder-gray-500 outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
+                  required
+                  className="w-full bg-[#2A2A2A] border border-gray-700/50 rounded-xl py-3 pl-11 pr-4 text-sm text-white placeholder-gray-500 outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
                 />
               </div>
             </div>
 
+            {/* Confirm Password */}
             <div>
               <label className="text-sm font-semibold text-gray-300">Confirm Password</label>
               <div className="relative mt-1">
@@ -101,14 +131,15 @@ export function SignupPage() {
                   value={confirm}
                   onChange={(e) => setConfirm(e.target.value)}
                   placeholder="Confirm your password"
-                  className="w-full bg-surface border border-gray-700/50 rounded-xl py-3 pl-11 pr-4 text-sm text-white placeholder-gray-500 outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
+                  required
+                  className="w-full bg-[#2A2A2A] border border-gray-700/50 rounded-xl py-3 pl-11 pr-4 text-sm text-white placeholder-gray-500 outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
                 />
               </div>
             </div>
 
             <button
               type="submit"
-              className="w-full bg-accent hover:bg-pink-500 text-dark font-bold py-3 rounded-xl text-sm tracking-wide transition-all duration-300 hover:shadow-lg hover:shadow-accent/30 mt-2"
+              className="w-full bg-accent hover:bg-pink-500 text-dark font-bold py-3 rounded-xl text-sm tracking-wide transition-all duration-300 hover:shadow-lg hover:shadow-accent/30 mt-2 cursor-pointer"
             >
               CREATE ACCOUNT
             </button>

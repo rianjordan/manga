@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { Outlet } from 'react-router-dom'
+import { Outlet, useLocation } from 'react-router-dom'
 import { Header } from './Header'
 import { Footer } from './Footer'
 import { useAuth } from '../../store'
@@ -9,6 +9,7 @@ export function Layout() {
   const { isLoggedIn } = useAuth()
   const { fetchHistory, clearHistory } = useReadingHistory()
   const { fetchFollows, clearFollows } = useFollows()
+  const location = useLocation()
 
   useEffect(() => {
     if (isLoggedIn) {
@@ -19,6 +20,12 @@ export function Layout() {
       clearFollows()
     }
   }, [isLoggedIn])
+
+  const isAuthPage = location.pathname === '/login' || location.pathname === '/signup'
+
+  if (isAuthPage) {
+    return <Outlet />
+  }
 
   return (
     <div className="min-h-screen flex flex-col text-white font-sans antialiased overflow-x-hidden bg-dark">
