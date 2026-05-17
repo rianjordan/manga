@@ -8,11 +8,10 @@ import type { Chapter, Tag } from '../lib/types'
 export function MangaDetailPage() {
   const { id } = useParams<{ id: string }>()
   const { data: mangaRes, isLoading } = useManga(id!)
-  const [lang, setLang] = useState('en')
+  const [selectedLang, setSelectedLang] = useState<string | null>(null)
 
   const { data: feedData } = useMangaFeed(id!, {
     limit: 500,
-    translatedLanguage: [lang],
   })
 
   const { follow, unfollow, getStatus } = useFollows()
@@ -33,7 +32,30 @@ export function MangaDetailPage() {
   const coverRel = manga.relationships.find((r: { type: string }) => r.type === 'cover_art')
   const coverFile = coverRel?.attributes?.fileName as string | undefined
   const tags = manga.attributes.tags ?? []
-  const chapters = feedData?.data ?? []
+  
+  const allChapters = feedData?.data ?? []
+  const availableLanguages = Array.from(
+    new Set(
+      allChapters
+        .map((ch) => ch.attributes.translatedLanguage)
+        .filter(Boolean)
+    )
+  ).sort() as string[]
+
+  let activeLang = selectedLang
+  if (!activeLang && availableLanguages.length > 0) {
+    if (availableLanguages.includes('en')) {
+      activeLang = 'en'
+    } else if (availableLanguages.includes('id')) {
+      activeLang = 'id'
+    } else if (availableLanguages.includes('ja')) {
+      activeLang = 'ja'
+    } else {
+      activeLang = availableLanguages[0]
+    }
+  }
+
+  const chapters = allChapters.filter((ch) => ch.attributes.translatedLanguage === (activeLang ?? 'en'))
   const followStatus = getStatus(id!)
 
   const grouped = chapters.reduce(
@@ -41,7 +63,7 @@ export function MangaDetailPage() {
       const vol = ch.attributes.volume ?? '0'
       if (!acc[vol]) acc[vol] = []
       acc[vol].push(ch)
-      return acc
+      return acc;
     },
     {} as Record<string, Chapter[]>,
   )
@@ -148,18 +170,18 @@ export function MangaDetailPage() {
             <span className="text-muted text-sm">({chapters.length})</span>
           </div>
 
-          <div className="flex gap-2">
-            {['en', 'ja', 'ko', 'zh'].map((l) => (
+          <div className="flex gap-2 flex-wrap">
+            {availableLanguages.map((l) => (
               <button
                 key={l}
-                onClick={() => setLang(l)}
+                onClick={() => setSelectedLang(l)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide transition-all ${
-                  lang === l
+                  activeLang === l
                     ? 'bg-accent text-dark'
                     : 'bg-card text-muted hover:text-accent border border-gray-700/50'
                 }`}
               >
-                {l}
+                {l === 'en' ? '🇺🇸 EN' : l === 'id' ? '🇮🇩 ID' : l === 'ja' ? '🇯🇵 JA' : l === 'es' ? '🇪🇸 ES' : l.toUpperCase()}
               </button>
             ))}
           </div>

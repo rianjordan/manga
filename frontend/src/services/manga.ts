@@ -42,7 +42,9 @@ export const mangaService = {
       limit: params.limit ?? 100,
       offset: params.offset ?? 0,
       includes: ['scanlation_group', 'user'],
-      'translatedLanguage[]': params.translatedLanguage ?? ['en'],
+    }
+    if (params.translatedLanguage) {
+      query['translatedLanguage[]'] = params.translatedLanguage
     }
     return api.get<ChapterListResponse>(`/manga/${id}/feed`, query)
   },
