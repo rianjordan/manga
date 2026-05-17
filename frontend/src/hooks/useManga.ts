@@ -21,7 +21,7 @@ export function useManga(id: string, options?: { enabled?: boolean }) {
 
 export function useMangaFeed(
   id: string,
-  params?: { limit?: number; offset?: number; translatedLanguage?: string[] },
+  params?: { limit?: number; offset?: number; translatedLanguage?: string[]; order?: Record<string, string> },
   options?: { enabled?: boolean }
 ) {
   return useQuery({

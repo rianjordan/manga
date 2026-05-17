@@ -40,11 +40,12 @@ export const mangaService = {
       includes: ['cover_art', 'author', 'artist', 'tag'],
     }),
 
-  getFeed: (id: string, params: { limit?: number; offset?: number; translatedLanguage?: string[] }) => {
+  getFeed: (id: string, params: { limit?: number; offset?: number; translatedLanguage?: string[]; order?: Record<string, string> }) => {
     const query: Record<string, unknown> = {
       limit: params.limit ?? 100,
       offset: params.offset ?? 0,
       includes: ['scanlation_group', 'user'],
+      order: params.order ?? { volume: 'desc', chapter: 'desc' },
     }
     if (params.translatedLanguage) {
       query['translatedLanguage[]'] = params.translatedLanguage
