@@ -45,7 +45,7 @@ export function LoginPage() {
     <div
       className="min-h-screen w-full flex items-center justify-center relative overflow-hidden bg-cover bg-center bg-no-repeat py-12 px-4"
       style={{
-        backgroundImage: `linear-gradient(rgba(18, 18, 18, 0.92), rgba(18, 18, 18, 0.92)), url('/img/website/loginbg.jpg')`
+        backgroundImage: `linear-gradient(rgba(12, 12, 12, 0.82), rgba(12, 12, 12, 0.82)), url('/img/website/loginbg.jpg')`
       }}
     >
       {/* Back to Home Button */}
@@ -60,18 +60,18 @@ export function LoginPage() {
       </Link>
 
       {/* Background Ambient Glows */}
-      <div className="absolute top-[-15%] left-[-10%] w-[500px] h-[500px] rounded-full bg-accent/8 blur-[120px] pointer-events-none z-0 animate-pulse" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[400px] h-[400px] rounded-full bg-accent/5 blur-[120px] pointer-events-none z-0 animate-pulse" />
+      <div className="login-bg-glow login-bg-glow--1" />
+      <div className="login-bg-glow login-bg-glow--2" />
 
       {/* Login Card */}
-      <div className="w-full max-w-md relative z-10 animate-fade-in-up">
+      <div className="w-full max-w-md relative z-10">
         {/* Logo */}
         <Link to="/" className="flex items-center justify-center gap-3 mb-8 group">
           <span className="font-black text-3xl tracking-wider text-accent">Reader's Haven</span>
         </Link>
 
         {/* Form Container */}
-        <div className="bg-card/85 backdrop-blur-xl rounded-2xl p-8 shadow-2xl border border-gray-800/40">
+        <div className="login-card bg-card/85 backdrop-blur-xl rounded-2xl p-8 shadow-2xl border border-gray-800/40">
           <h1 className="text-2xl font-black text-center mb-1 tracking-tight text-white">Welcome Back</h1>
           <p className="text-muted text-sm text-center mb-8">Log in to continue your reading journey</p>
 
@@ -125,7 +125,7 @@ export function LoginPage() {
             {/* Submit Button */}
             <button
               type="submit"
-              className="w-full bg-accent hover:bg-pink-500 text-dark font-bold py-3 rounded-xl text-sm tracking-wide transition-all duration-300 hover:shadow-[0_8px_24px_rgba(214,51,108,0.3)] cursor-pointer"
+              className="login-btn w-full bg-accent hover:bg-pink-500 text-dark font-black py-3.5 rounded-xl text-sm tracking-wide transition-all duration-300 hover:shadow-[0_8px_24px_rgba(214,51,108,0.3)] cursor-pointer transform hover:-translate-y-0.5 active:translate-y-0 shadow-lg shadow-accent/20"
             >
               LOG IN
             </button>
@@ -133,22 +133,22 @@ export function LoginPage() {
 
           {/* Social Divider */}
           <div className="flex items-center gap-4 my-6">
-            <div className="flex-grow h-px bg-gray-700/50" />
+            <div className="flex-grow h-px bg-gray-700/50 border-gray-800" />
             <span className="text-xs text-muted font-medium tracking-wider">OR</span>
-            <div className="flex-grow h-px bg-gray-700/50" />
+            <div className="flex-grow h-px bg-gray-700/50 border-gray-800" />
           </div>
 
           {/* Social Buttons */}
           <div className="flex gap-3">
             <button
               type="button"
-              className="flex-1 flex items-center justify-center gap-2 bg-[#2A2A2A] hover:bg-gray-800 border border-gray-700/40 rounded-xl py-2.5 text-sm font-semibold text-white transition-all duration-300"
+              className="social-btn flex-1 flex items-center justify-center gap-2 bg-[#2A2A2A] hover:bg-gray-800 border border-gray-700/40 rounded-xl py-2.5 text-sm font-semibold text-white transition-all duration-300 cursor-pointer"
             >
               <i className="fa-brands fa-google text-red-400" /> Google
             </button>
             <button
               type="button"
-              className="flex-1 flex items-center justify-center gap-2 bg-[#2A2A2A] hover:bg-gray-800 border border-gray-700/40 rounded-xl py-2.5 text-sm font-semibold text-white transition-all duration-300"
+              className="social-btn flex-1 flex items-center justify-center gap-2 bg-[#2A2A2A] hover:bg-gray-800 border border-gray-700/40 rounded-xl py-2.5 text-sm font-semibold text-white transition-all duration-300 cursor-pointer"
             >
               <i className="fa-brands fa-facebook text-blue-400" /> Facebook
             </button>

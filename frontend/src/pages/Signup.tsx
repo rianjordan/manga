@@ -35,7 +35,7 @@ export function SignupPage() {
     <div
       className="min-h-screen w-full flex items-center justify-center relative overflow-hidden bg-cover bg-center bg-no-repeat py-12 px-4"
       style={{
-        backgroundImage: `linear-gradient(rgba(18, 18, 18, 0.92), rgba(18, 18, 18, 0.92)), url('/img/website/loginbg.jpg')`
+        backgroundImage: `linear-gradient(rgba(12, 12, 12, 0.82), rgba(12, 12, 12, 0.82)), url('/img/website/loginbg.jpg')`
       }}
     >
       {/* Back to Home Button */}
@@ -50,18 +50,18 @@ export function SignupPage() {
       </Link>
 
       {/* Background Ambient Glows */}
-      <div className="absolute top-[-15%] left-[-10%] w-[500px] h-[500px] rounded-full bg-accent/8 blur-[120px] pointer-events-none z-0 animate-pulse" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[400px] h-[400px] rounded-full bg-accent/5 blur-[120px] pointer-events-none z-0 animate-pulse" />
+      <div className="login-bg-glow login-bg-glow--1" />
+      <div className="login-bg-glow login-bg-glow--2" />
 
       {/* Signup Card */}
-      <div className="w-full max-w-md relative z-10 animate-fade-in-up">
+      <div className="w-full max-w-md relative z-10">
         {/* Logo */}
         <Link to="/" className="flex items-center justify-center gap-3 mb-8 group">
           <span className="font-black text-3xl tracking-wider text-accent">Reader's Haven</span>
         </Link>
 
         {/* Form Container */}
-        <div className="bg-card/85 backdrop-blur-xl rounded-2xl p-8 shadow-2xl border border-gray-800/40">
+        <div className="signup-card bg-card/85 backdrop-blur-xl rounded-2xl p-8 shadow-2xl border border-gray-800/40">
           <h1 className="text-2xl font-black text-center mb-1 tracking-tight text-white">Create Account</h1>
           <p className="text-muted text-sm text-center mb-7">Join the community and start reading today</p>
 
@@ -139,7 +139,7 @@ export function SignupPage() {
 
             <button
               type="submit"
-              className="w-full bg-accent hover:bg-pink-500 text-dark font-bold py-3 rounded-xl text-sm tracking-wide transition-all duration-300 hover:shadow-lg hover:shadow-accent/30 mt-2 cursor-pointer"
+              className="login-btn w-full bg-accent hover:bg-pink-500 text-dark font-black py-3.5 rounded-xl text-sm tracking-wide transition-all duration-300 hover:shadow-lg hover:shadow-accent/30 mt-2 cursor-pointer transform hover:-translate-y-0.5 active:translate-y-0 shadow-lg shadow-accent/20"
             >
               CREATE ACCOUNT
             </button>
